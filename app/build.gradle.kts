@@ -61,8 +61,9 @@ dependencies {
     implementation(libs.firebase.storage)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    // Image loading
+    // Image loading + EXIF-aware compression
     implementation(libs.coil.compose)
+    implementation(libs.androidx.exifinterface)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

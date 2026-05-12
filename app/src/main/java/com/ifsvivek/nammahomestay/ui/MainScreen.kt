@@ -1,0 +1,94 @@
+package com.ifsvivek.nammahomestay.ui
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.ifsvivek.nammahomestay.ui.guide.GuideScreen
+import com.ifsvivek.nammahomestay.ui.home.HomeProfileScreen
+import com.ifsvivek.nammahomestay.ui.inquiry.InquiryScreen
+import com.ifsvivek.nammahomestay.ui.menu.DailyMenuScreen
+import com.ifsvivek.nammahomestay.ui.navigation.TopDestination
+import kotlinx.coroutines.launch
+
+/**
+ * The signed-in shell: bottom navigation + the four destinations. Each screen
+ * brings its own top bar / FAB / snackbar; this Scaffold only owns the bottom bar
+ * and a top-level snackbar for cross-screen confirmations (e.g. "menu posted").
+ */
+@Composable
+fun MainScreen(
+    onSignOut: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = backStackEntry?.destination?.route
+
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    fun goTo(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = {
+            NavigationBar {
+                TopDestination.entries.forEach { dest ->
+                    NavigationBarItem(
+                        selected = currentRoute == dest.route,
+                        onClick = { goTo(dest.route) },
+                        icon = { Icon(dest.icon, contentDescription = dest.label) },
+                        label = { Text(dest.label, style = MaterialTheme.typography.labelLarge) },
+                        alwaysShowLabel = true,
+                    )
+                }
+            }
+        },
+    ) { inner ->
+        NavHost(
+            navController = navController,
+            startDestination = TopDestination.HOME.route,
+            modifier = Modifier.padding(inner),
+        ) {
+            composable(TopDestination.HOME.route) {
+                HomeProfileScreen(onOpenTodaysMenu = { goTo(TopDestination.MENU.route) })
+            }
+            composable(TopDestination.MENU.route) {
+                DailyMenuScreen(
+                    onMenuPublished = {
+                        scope.launch { snackbar.showSnackbar("Today's menu is posted ✓") }
+                    },
+                )
+            }
+            composable(TopDestination.INQUIRIES.route) {
+                InquiryScreen()
+            }
+            composable(TopDestination.GUIDE.route) {
+                GuideScreen(onSignOut = onSignOut)
+            }
+        }
+    }
+}
