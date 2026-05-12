@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "namma-homestay-REPLACE-ME",
-    "storage_bucket": "namma-homestay-REPLACE-ME.appspot.com"
+    "project_number": "782439552448",
+    "project_id": "nammahomestay-dfe84230",
+    "storage_bucket": "nammahomestay-dfe84230.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:782439552448:android:6453913df1b29d36ade425",
         "android_client_info": {
           "package_name": "com.ifsvivek.nammahomestay"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "REPLACE_ME_WITH_REAL_KEY_FROM_FIREBASE_CONSOLE"
+          "current_key": "AIzaSyD7-LJeSBVKso_804KDOrKnzXief7Pf4p4"
         }
       ],
       "services": {
