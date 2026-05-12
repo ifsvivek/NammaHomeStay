@@ -12,6 +12,10 @@ Built for rural farmers and homemakers with low digital literacy — big buttons
 ![minSdk](https://img.shields.io/badge/minSdk-24-555)
 ![Backend](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-FFCA28?logo=firebase&logoColor=black)
 
+<br/>
+
+<img src="image.png" alt="Namma HomeStay screenshots" width="820"/>
+
 </div>
 
 ---
