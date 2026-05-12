@@ -17,12 +17,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Bed
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cottage
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Restaurant
@@ -38,7 +39,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,13 +50,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import com.google.firebase.firestore.Blob
+import com.ifsvivek.nammahomestay.data.model.Homestay
 import com.ifsvivek.nammahomestay.ui.components.BigActionButton
+import com.ifsvivek.nammahomestay.ui.components.NammaTopBar
+import com.ifsvivek.nammahomestay.ui.components.PhotoImage
 import com.ifsvivek.nammahomestay.ui.components.SectionCard
 import com.ifsvivek.nammahomestay.ui.components.SetupProgressCard
 import com.ifsvivek.nammahomestay.ui.components.StatusPill
@@ -87,11 +89,7 @@ fun HomeProfileScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0), // outer (bottom-bar) Scaffold already inset us
-        topBar = {
-            TopAppBar(
-                title = { Text("My Home", style = MaterialTheme.typography.headlineSmall) },
-            )
-        },
+        topBar = { NammaTopBar("My Home") },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -153,7 +151,7 @@ fun HomeProfileScreen(
                     images = home?.images.orEmpty(),
                     uploading = state.savingPhoto,
                     onAdd = { pickPhoto.launch("image/*") },
-                    onRemove = viewModel::removePhoto,
+                    onRemoveAt = viewModel::removePhotoAt,
                 )
             }
 
@@ -167,17 +165,17 @@ fun HomeProfileScreen(
                 )
             }
 
-            item { Spacer(Modifier.height(72.dp)) } // breathing room above the FAB
+            item { Spacer(Modifier.height(96.dp)) } // breathing room above the FAB
         }
     }
 }
 
 @Composable
 private fun HomeBasicsCard(
-    home: com.ifsvivek.nammahomestay.data.model.Homestay?,
+    home: Homestay?,
     onSave: (name: String, location: String) -> Unit,
 ) {
-    SectionCard(title = "Your home's name", icon = Icons.Filled.PhotoLibrary) {
+    SectionCard(title = "Your home's name", icon = Icons.Filled.Cottage) {
         var name by rememberSaveable(home?.name) { mutableStateOf(home?.name.orEmpty()) }
         var place by rememberSaveable(home?.location) { mutableStateOf(home?.location.orEmpty()) }
         OutlinedTextField(
@@ -210,43 +208,45 @@ private fun HomeBasicsCard(
 
 @Composable
 private fun PhotosCard(
-    images: List<String>,
+    images: List<Blob>,
     uploading: Boolean,
     onAdd: () -> Unit,
-    onRemove: (String) -> Unit,
+    onRemoveAt: (Int) -> Unit,
 ) {
+    val full = images.size >= Homestay.MAX_PHOTOS
     SectionCard(title = "Photos of your home", icon = Icons.Filled.PhotoLibrary) {
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable(enabled = !uploading, onClick = onAdd),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (uploading) {
-                        CircularProgressIndicator(strokeWidth = 3.dp)
-                    } else {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Filled.AddAPhoto,
-                                contentDescription = null,
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text("Add photo", style = MaterialTheme.typography.bodyMedium)
+            if (!full) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable(enabled = !uploading, onClick = onAdd),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (uploading) {
+                            CircularProgressIndicator(strokeWidth = 3.dp)
+                        } else {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Filled.AddAPhoto,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(36.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text("Add photo", style = MaterialTheme.typography.bodyMedium)
+                            }
                         }
                     }
                 }
             }
-            items(images, key = { it }) { url ->
+            itemsIndexed(images) { index, blob ->
                 Box(modifier = Modifier.size(120.dp)) {
-                    AsyncImage(
-                        model = url,
+                    PhotoImage(
+                        blob = blob,
                         contentDescription = "Home photo",
-                        contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(16.dp)),
@@ -258,7 +258,7 @@ private fun PhotosCard(
                             .size(28.dp)
                             .clip(RoundedCornerShape(50))
                             .background(MaterialTheme.colorScheme.errorContainer)
-                            .clickable { onRemove(url) },
+                            .clickable { onRemoveAt(index) },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -271,14 +271,16 @@ private fun PhotosCard(
                 }
             }
         }
-        if (images.isEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Add at least one photo so guests can see your home.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            when {
+                images.isEmpty() -> "Add at least one photo so guests can see your home."
+                full -> "That's the maximum (${Homestay.MAX_PHOTOS}). Remove one to add another."
+                else -> "${images.size} of ${Homestay.MAX_PHOTOS} photos added."
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

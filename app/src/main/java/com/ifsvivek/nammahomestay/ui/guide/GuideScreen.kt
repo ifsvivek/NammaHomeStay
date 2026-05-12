@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.ifsvivek.nammahomestay.ui.components.BigActionButton
+import com.ifsvivek.nammahomestay.ui.components.NammaTopBar
 import com.ifsvivek.nammahomestay.ui.components.SectionCard
 import com.ifsvivek.nammahomestay.ui.theme.CallGreen
 import com.ifsvivek.nammahomestay.util.dialPhoneNumber
@@ -80,9 +80,7 @@ fun GuideScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
-        topBar = {
-            TopAppBar(title = { Text("Guide & Help", style = MaterialTheme.typography.headlineSmall) })
-        },
+        topBar = { NammaTopBar("Guide & Help") },
     ) { inner ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(inner),

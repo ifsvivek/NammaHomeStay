@@ -2,6 +2,7 @@ package com.ifsvivek.nammahomestay.ui.home
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ifsvivek.nammahomestay.data.model.Homestay
@@ -68,7 +69,10 @@ class HomeViewModel(
         viewModelScope.launch {
             runCatching { hostRepo.updateBasics(id, name, location) }
                 .onSuccess { _state.update { it.copy(message = "Saved ✓") } }
-                .onFailure { _state.update { it.copy(message = "Could not save. Check internet.") } }
+                .onFailure { e ->
+                    Log.e(TAG, "saveBasics failed", e)
+                    _state.update { it.copy(message = "Could not save: ${e.message ?: "unknown error"}") }
+                }
         }
     }
 
@@ -80,7 +84,10 @@ class HomeViewModel(
                     id,
                     VerificationChecklist(cleanBedding, functionalWashroom, drinkingWater),
                 )
-            }.onFailure { _state.update { it.copy(message = "Could not save. Check internet.") } }
+            }.onFailure { e ->
+                Log.e(TAG, "setChecklist failed", e)
+                _state.update { it.copy(message = "Could not save: ${e.message ?: "unknown error"}") }
+            }
         }
     }
 
@@ -95,18 +102,31 @@ class HomeViewModel(
                 hostRepo.addPhoto(id, bytes)
             }
             _state.update {
-                it.copy(
-                    savingPhoto = false,
-                    message = if (result.isSuccess) "Photo added ✓" else "Photo upload failed. Try again.",
-                )
+                if (result.isSuccess) {
+                    it.copy(savingPhoto = false, message = "Photo added ✓")
+                } else {
+                    val e = result.exceptionOrNull()
+                    Log.e(TAG, "addPhoto failed", e)
+                    it.copy(
+                        savingPhoto = false,
+                        message = "Photo upload failed: ${e?.message ?: "unknown error"}. Is Firebase Storage enabled?",
+                    )
+                }
             }
         }
     }
 
-    fun removePhoto(url: String) {
+    fun removePhotoAt(index: Int) {
         val id = uid ?: return
-        viewModelScope.launch { runCatching { hostRepo.removePhoto(id, url) } }
+        viewModelScope.launch {
+            runCatching { hostRepo.removePhotoAt(id, index) }
+                .onFailure { e -> Log.e(TAG, "removePhotoAt failed", e) }
+        }
     }
 
     fun consumeMessage() = _state.update { it.copy(message = null) }
+
+    private companion object {
+        const val TAG = "HomeViewModel"
+    }
 }

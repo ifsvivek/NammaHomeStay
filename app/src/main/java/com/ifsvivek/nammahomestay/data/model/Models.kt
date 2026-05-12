@@ -1,5 +1,6 @@
 package com.ifsvivek.nammahomestay.data.model
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
@@ -8,11 +9,15 @@ import java.util.Date
  * Domain models. These double as Firestore POJOs, so every field has a default
  * value and a no-arg constructor is available (data class with all defaults).
  *
- * Firestore layout (see also [FirestoreCollections]):
+ * Firestore layout (see also [com.ifsvivek.nammahomestay.data.FirestoreCollections]):
  *   hosts/{uid}                -> Host
  *   homestays/{uid}            -> Homestay      (one shopfront per host, for the MVP)
  *   daily_menus/{uid}          -> DailyMenu     (overwritten each day with one set())
  *   inquiries/{autoId}         -> Inquiry
+ *
+ * Photos are stored as JPEG [Blob]s directly inside the documents, not in Cloud
+ * Storage — the free Spark plan doesn't include Storage. [ImageCompressor] keeps
+ * each image small enough to stay well under Firestore's ~1 MB per-document cap.
  */
 
 data class Host(
@@ -37,12 +42,17 @@ data class Homestay(
     val hostId: String = "",
     val name: String = "",
     val location: String = "",
-    val images: List<String> = emptyList(),
+    /** Up to a handful of small JPEGs. Capped so the doc stays under 1 MB. */
+    val images: List<Blob> = emptyList(),
     val checklist: VerificationChecklist = VerificationChecklist(),
     /** Visible to travellers. Only true when [checklist].isComplete and there is ≥1 photo. */
     val live: Boolean = false,
 ) {
     val canGoLive: Boolean get() = checklist.isComplete && images.isNotEmpty() && name.isNotBlank()
+
+    companion object {
+        const val MAX_PHOTOS = 6
+    }
 }
 
 data class DailyMenu(
@@ -50,10 +60,11 @@ data class DailyMenu(
     val hostId: String = "",
     val dishName: String = "",
     val price: Long = 0L,
-    val imageUrl: String = "",
+    /** The dish photo as a small JPEG, or null if none. */
+    val image: Blob? = null,
     @ServerTimestamp val dateTimestamp: Date? = null,
 ) {
-    val isEmpty: Boolean get() = dishName.isBlank() && imageUrl.isBlank()
+    val isEmpty: Boolean get() = dishName.isBlank() && image == null
 }
 
 data class Inquiry(

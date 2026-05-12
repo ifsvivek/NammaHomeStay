@@ -43,7 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.google.firebase.firestore.Blob
 import com.ifsvivek.nammahomestay.ui.components.BigActionButton
+import com.ifsvivek.nammahomestay.ui.components.PhotoImage
 import com.ifsvivek.nammahomestay.ui.components.SuccessCheck
 
 /**
@@ -95,7 +97,7 @@ fun DailyMenuScreen(
             // ── 1. The photo ────────────────────────────────────────────────
             MenuPhotoSlot(
                 pickedUri = state.pickedImage,
-                existingUrl = state.published?.imageUrl,
+                storedPhoto = state.published?.image,
                 onTap = { pickImage.launch("image/*") },
             )
             Spacer(Modifier.height(20.dp))
@@ -168,9 +170,10 @@ fun DailyMenuScreen(
 @Composable
 private fun MenuPhotoSlot(
     pickedUri: android.net.Uri?,
-    existingUrl: String?,
+    storedPhoto: Blob?,
     onTap: () -> Unit,
 ) {
+    val hasPhoto = pickedUri != null || storedPhoto != null
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -188,10 +191,9 @@ private fun MenuPhotoSlot(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            !existingUrl.isNullOrBlank() -> AsyncImage(
-                model = existingUrl,
+            storedPhoto != null -> PhotoImage(
+                blob = storedPhoto,
                 contentDescription = "Today's dish photo",
-                contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -214,7 +216,7 @@ private fun MenuPhotoSlot(
         }
 
         // A small "change photo" affordance once something is shown.
-        if (pickedUri != null || !existingUrl.isNullOrBlank()) {
+        if (hasPhoto) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)

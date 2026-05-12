@@ -2,8 +2,10 @@ package com.ifsvivek.nammahomestay.ui.menu
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.Blob
 import com.ifsvivek.nammahomestay.data.model.DailyMenu
 import com.ifsvivek.nammahomestay.data.repository.AuthRepository
 import com.ifsvivek.nammahomestay.data.repository.MenuRepository
@@ -23,7 +25,7 @@ data class MenuUiState(
     // ── the "draft" the host is editing ──────────────────────────────────────
     val dishName: String = "",
     val priceText: String = "",
-    /** A photo just picked from gallery/camera, not yet uploaded. */
+    /** A photo just picked from gallery/camera, not yet stored. */
     val pickedImage: Uri? = null,
     // ── transient ────────────────────────────────────────────────────────────
     val saving: Boolean = false,
@@ -31,7 +33,7 @@ data class MenuUiState(
     val error: String? = null,
 ) {
     val price: Long? get() = priceText.trim().toLongOrNull()
-    val hasPhoto: Boolean get() = pickedImage != null || !published?.imageUrl.isNullOrBlank()
+    val hasPhoto: Boolean get() = pickedImage != null || published?.image != null
     val canPublish: Boolean
         get() = dishName.isNotBlank() && (price ?: 0L) > 0L && hasPhoto && !saving
     val hasPublishedMenu: Boolean get() = published?.isEmpty == false
@@ -39,7 +41,7 @@ data class MenuUiState(
 
 /**
  * Drives the "60-Second Menu". The host fills one photo + one name + one price
- * and [publish] writes it in a single Firestore `set()`.
+ * and [publish] writes it in a single Firestore `set()` (photo included as a Blob).
  */
 class MenuViewModel(
     private val authRepo: AuthRepository = AuthRepository(),
@@ -93,21 +95,27 @@ class MenuViewModel(
 
         viewModelScope.launch {
             val result = runCatching {
-                val imageUrl = when (val picked = st.pickedImage) {
-                    null -> st.published?.imageUrl.orEmpty()
+                val image: Blob? = when (val picked = st.pickedImage) {
+                    null -> st.published?.image // keep the existing photo
                     else -> {
-                        val bytes = withContext(Dispatchers.IO) { ImageCompressor.compress(context, picked) }
-                            ?: error("Could not read that photo")
-                        menuRepo.uploadMenuPhoto(id, bytes)
+                        val bytes = withContext(Dispatchers.IO) {
+                            ImageCompressor.compress(context, picked, maxEdgePx = 1080, targetBytes = 350_000)
+                        } ?: error("Could not read that photo")
+                        Blob.fromBytes(bytes)
                     }
                 }
-                menuRepo.save(id, st.dishName, price, imageUrl)
+                menuRepo.save(id, st.dishName, price, image)
             }
             _state.update {
                 if (result.isSuccess) {
                     it.copy(saving = false, justPublished = true, pickedImage = null)
                 } else {
-                    it.copy(saving = false, error = "Could not post. Check your internet and try again.")
+                    val e = result.exceptionOrNull()
+                    Log.e(TAG, "Publishing today's menu failed", e)
+                    it.copy(
+                        saving = false,
+                        error = "Could not post: ${e?.message ?: "unknown error"}. Check your internet and that Cloud Firestore is enabled.",
+                    )
                 }
             }
         }
@@ -124,4 +132,8 @@ class MenuViewModel(
 
     fun consumePublished() = _state.update { it.copy(justPublished = false) }
     fun consumeError() = _state.update { it.copy(error = null) }
+
+    private companion object {
+        const val TAG = "MenuViewModel"
+    }
 }

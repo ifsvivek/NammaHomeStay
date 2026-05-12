@@ -1,10 +1,9 @@
 package com.ifsvivek.nammahomestay.data.repository
 
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import com.google.firebase.storage.FirebaseStorage
 import com.ifsvivek.nammahomestay.data.FirestoreCollections
-import com.ifsvivek.nammahomestay.data.StoragePaths
 import com.ifsvivek.nammahomestay.data.model.Homestay
 import com.ifsvivek.nammahomestay.data.model.Host
 import com.ifsvivek.nammahomestay.data.model.VerificationChecklist
@@ -12,16 +11,15 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 /**
  * Reads / writes the host's profile ([Host]) and their "digital shopfront"
  * ([Homestay]). For the MVP there is exactly one homestay per host, so the
- * homestay document id is the host's uid.
+ * homestay document id is the host's uid. Photos live as JPEG [Blob]s on the
+ * homestay document (no Cloud Storage on the free plan).
  */
 class HostRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
 ) {
     private fun hostDoc(uid: String) = db.collection(FirestoreCollections.HOSTS).document(uid)
     private fun homestayDoc(uid: String) = db.collection(FirestoreCollections.HOMESTAYS).document(uid)
@@ -67,31 +65,34 @@ class HostRepository(
         recomputeLive(uid)
     }
 
-    /** Compresses-then-uploads happens in the ViewModel; here we just push bytes + link it. */
-    suspend fun addPhoto(uid: String, jpegBytes: ByteArray): String {
-        val ref = storage.reference
-            .child("${StoragePaths.HOMESTAY_PHOTOS}/$uid/${UUID.randomUUID()}.jpg")
-        ref.putBytes(jpegBytes).await()
-        val url = ref.downloadUrl.await().toString()
-        val current = homestayDoc(uid).get().await().toObject(Homestay::class.java) ?: Homestay(id = uid, hostId = uid)
+    /** Appends one compressed JPEG to the homestay's photo list. */
+    suspend fun addPhoto(uid: String, jpegBytes: ByteArray) {
+        val current = currentHomestay(uid)
+        require(current.images.size < Homestay.MAX_PHOTOS) {
+            "You can add up to ${Homestay.MAX_PHOTOS} photos. Remove one first."
+        }
         homestayDoc(uid).set(
-            mapOf("hostId" to uid, "images" to current.images + url),
+            mapOf("hostId" to uid, "images" to current.images + Blob.fromBytes(jpegBytes)),
             SetOptions.merge(),
         ).await()
         recomputeLive(uid)
-        return url
     }
 
-    suspend fun removePhoto(uid: String, url: String) {
-        val current = homestayDoc(uid).get().await().toObject(Homestay::class.java) ?: return
-        homestayDoc(uid).set(mapOf("images" to current.images - url), SetOptions.merge()).await()
+    /** Removes the photo at [index] in the current list (the order the UI shows). */
+    suspend fun removePhotoAt(uid: String, index: Int) {
+        val current = currentHomestay(uid)
+        if (index !in current.images.indices) return
+        val updated = current.images.toMutableList().apply { removeAt(index) }
+        homestayDoc(uid).set(mapOf("images" to updated), SetOptions.merge()).await()
         recomputeLive(uid)
     }
 
+    private suspend fun currentHomestay(uid: String): Homestay =
+        homestayDoc(uid).get().await().toObject(Homestay::class.java) ?: Homestay(id = uid, hostId = uid)
+
     /** Recomputes the `live` flag from the current state and mirrors it onto the host doc. */
     private suspend fun recomputeLive(uid: String) {
-        val home = homestayDoc(uid).get().await().toObject(Homestay::class.java) ?: return
-        val live = home.copy().canGoLive
+        val live = currentHomestay(uid).canGoLive
         homestayDoc(uid).set(mapOf("live" to live), SetOptions.merge()).await()
         hostDoc(uid).set(
             mapOf("verifiedStatus" to if (live) "verified" else "new"),

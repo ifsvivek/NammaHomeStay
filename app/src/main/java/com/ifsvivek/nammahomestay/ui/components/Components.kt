@@ -1,9 +1,12 @@
 package com.ifsvivek.nammahomestay.ui.components
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +21,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -32,12 +37,19 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.google.firebase.firestore.Blob
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Big, friendly, full-width primary button — minimum 56 dp tall, large label. */
 @Composable
@@ -257,5 +269,64 @@ fun SuccessCheck(visible: Boolean, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun screenPadding(extraTop: androidx.compose.ui.unit.Dp = 0.dp) =
-    PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp + extraTop, bottom = 24.dp)
+/**
+ * The shared screen header. Deliberately *not* a Material `TopAppBar` — that
+ * reserves 64 dp; this slim band is ~44 dp and painted in the page background
+ * colour, so it doesn't eat the screen on a small phone.
+ */
+@Composable
+fun NammaTopBar(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onBackground,
+        maxLines = 1,
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
+    )
+}
+
+/**
+ * Renders a JPEG that's stored as a Firestore [Blob] (we keep photos in the docs
+ * because the free plan has no Cloud Storage). Decoding happens off the main
+ * thread and is re-done only when the blob actually changes.
+ */
+@Composable
+fun PhotoImage(
+    blob: Blob?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+) {
+    val bitmap by produceState<ImageBitmap?>(initialValue = null, key1 = blob) {
+        value = blob?.let { b ->
+            withContext(Dispatchers.Default) {
+                val bytes = b.toBytes()
+                runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap() }
+                    .getOrNull()
+            }
+        }
+    }
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            bitmap != null -> Image(
+                bitmap = bitmap!!,
+                contentDescription = contentDescription,
+                contentScale = contentScale,
+                modifier = Modifier.matchParentSize(),
+            )
+            blob == null -> Icon(
+                Icons.Filled.BrokenImage,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(32.dp),
+            )
+            else -> CircularProgressIndicator(strokeWidth = 2.dp)
+        }
+    }
+}

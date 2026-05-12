@@ -10,20 +10,25 @@ import java.io.ByteArrayOutputStream
 import kotlin.math.max
 
 /**
- * Shrinks a picked photo before it goes up to Firebase Storage. Rural data is
- * slow and metered, so a 4 MB camera photo is downscaled to roughly the size of
- * a WhatsApp image (~longest edge 1280px, JPEG quality 70).
- *
- * Note: this is intentionally a plain function (no DI) so it stays trivial to call
- * from a repository on a background dispatcher.
+ * Shrinks a picked photo so it can be stored *inside a Firestore document* (the
+ * free Spark plan has no Cloud Storage). A Firestore doc is capped at ~1 MB, so
+ * we scale down hard and then keep dropping JPEG quality until the bytes fit a
+ * caller-given budget. The aggressive shrink is also exactly what rural data
+ * connections want.
  */
 object ImageCompressor {
 
-    private const val MAX_EDGE_PX = 1280
-    private const val JPEG_QUALITY = 70
-
-    /** Returns JPEG bytes ready to upload, or null if the Uri can't be read. */
-    fun compress(context: Context, uri: Uri): ByteArray? {
+    /**
+     * @param maxEdgePx longest edge of the output image
+     * @param targetBytes keep lowering quality until the JPEG is at or below this
+     * @return JPEG bytes ready to wrap in a Firestore [com.google.firebase.firestore.Blob], or null if the Uri can't be read
+     */
+    fun compress(
+        context: Context,
+        uri: Uri,
+        maxEdgePx: Int = 1024,
+        targetBytes: Int = 300_000,
+    ): ByteArray? {
         val resolver = context.contentResolver
 
         // 1. Decode bounds only, to compute a sample size and avoid OOM.
@@ -31,7 +36,7 @@ object ImageCompressor {
         resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
-        val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, MAX_EDGE_PX)
+        val sampleSize = calculateInSampleSize(bounds.outWidth, bounds.outHeight, maxEdgePx)
 
         // 2. Decode the (sub-sampled) bitmap.
         val decodeOpts = BitmapFactory.Options().apply { inSampleSize = sampleSize }
@@ -42,15 +47,25 @@ object ImageCompressor {
         // 3. Respect the camera's EXIF rotation so portraits aren't sideways.
         bitmap = applyExifRotation(context, uri, bitmap)
 
-        // 4. Final scale-down to the exact max edge if still larger.
-        bitmap = scaleToMaxEdge(bitmap, MAX_EDGE_PX)
+        // 4. Exact scale-down to the max edge if still larger.
+        bitmap = scaleToMaxEdge(bitmap, maxEdgePx)
 
-        return ByteArrayOutputStream().use { out ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
-            bitmap.recycle()
+        // 5. Encode, dropping quality until we're under budget.
+        var quality = 80
+        var bytes = bitmap.toJpeg(quality)
+        while (bytes.size > targetBytes && quality > 25) {
+            quality -= 15
+            bytes = bitmap.toJpeg(quality)
+        }
+        bitmap.recycle()
+        return bytes
+    }
+
+    private fun Bitmap.toJpeg(quality: Int): ByteArray =
+        ByteArrayOutputStream().use { out ->
+            compress(Bitmap.CompressFormat.JPEG, quality, out)
             out.toByteArray()
         }
-    }
 
     private fun calculateInSampleSize(width: Int, height: Int, maxEdge: Int): Int {
         var sample = 1
@@ -70,8 +85,8 @@ object ImageCompressor {
         val ratio = maxEdge.toFloat() / longest
         val scaled = Bitmap.createScaledBitmap(
             src,
-            (src.width * ratio).toInt(),
-            (src.height * ratio).toInt(),
+            (src.width * ratio).toInt().coerceAtLeast(1),
+            (src.height * ratio).toInt().coerceAtLeast(1),
             true,
         )
         if (scaled != src) src.recycle()

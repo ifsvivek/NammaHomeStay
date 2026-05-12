@@ -54,11 +54,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 
-    // Firebase
+    // Firebase (Auth + Firestore only — the free Spark plan has no Cloud Storage,
+    // so photos are stored as small Blobs inside Firestore documents instead)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
-    implementation(libs.firebase.storage)
     implementation(libs.kotlinx.coroutines.play.services)
 
     // Image loading + EXIF-aware compression

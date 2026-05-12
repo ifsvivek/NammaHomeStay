@@ -1,26 +1,24 @@
 package com.ifsvivek.nammahomestay.data.repository
 
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.Blob
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import com.ifsvivek.nammahomestay.data.FirestoreCollections
-import com.ifsvivek.nammahomestay.data.StoragePaths
 import com.ifsvivek.nammahomestay.data.model.DailyMenu
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
 /**
  * Backs the "60-Second Menu" feature. There is one menu document per host
  * (`daily_menus/{hostId}`); publishing today's dish is a single [save] which is
  * one Firestore `set()` — that's the whole point: fast enough to feel like
- * posting a status.
+ * posting a status. The dish photo rides along inside the document as a [Blob]
+ * (no Cloud Storage on the free plan).
  */
 class MenuRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
-    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
 ) {
     private fun menuDoc(hostId: String) =
         db.collection(FirestoreCollections.DAILY_MENUS).document(hostId)
@@ -36,27 +34,20 @@ class MenuRepository(
         awaitClose { reg.remove() }
     }
 
-    /** Uploads the (already compressed) dish photo and returns its download URL. */
-    suspend fun uploadMenuPhoto(hostId: String, jpegBytes: ByteArray): String {
-        val ref = storage.reference
-            .child("${StoragePaths.MENU_PHOTOS}/$hostId/${UUID.randomUUID()}.jpg")
-        ref.putBytes(jpegBytes).await()
-        return ref.downloadUrl.await().toString()
-    }
-
     /**
-     * Publishes today's menu in one write. Pass [imageUrl] from [uploadMenuPhoto]
-     * (or keep the previous one). This overwrites yesterday's entry by design.
+     * Publishes today's menu in one write. Pass [image] as a fresh [Blob] of the
+     * new photo, or the previously stored one to keep it, or null for no photo.
+     * Overwrites yesterday's entry by design.
      */
-    suspend fun save(hostId: String, dishName: String, price: Long, imageUrl: String) {
+    suspend fun save(hostId: String, dishName: String, price: Long, image: Blob?) {
         val menu = DailyMenu(
             id = hostId,
             hostId = hostId,
             dishName = dishName.trim(),
             price = price,
-            imageUrl = imageUrl,
-            // Set client-side so the UI shows a time immediately even before the
-            // server timestamp resolves; @ServerTimestamp would null this on write.
+            image = image,
+            // Set client-side so the UI shows a time immediately; @ServerTimestamp
+            // only fills this in when it's null on write.
             dateTimestamp = Timestamp.now().toDate(),
         )
         menuDoc(hostId).set(menu).await()

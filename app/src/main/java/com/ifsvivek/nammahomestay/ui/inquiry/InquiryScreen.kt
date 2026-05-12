@@ -32,7 +32,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ifsvivek.nammahomestay.data.model.Inquiry
 import com.ifsvivek.nammahomestay.ui.components.BigActionButton
 import com.ifsvivek.nammahomestay.ui.components.EmptyState
+import com.ifsvivek.nammahomestay.ui.components.NammaTopBar
 import com.ifsvivek.nammahomestay.ui.components.StatusPill
 import com.ifsvivek.nammahomestay.ui.theme.CallGreen
 import com.ifsvivek.nammahomestay.util.dialPhoneNumber
@@ -75,11 +75,7 @@ fun InquiryScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
-        topBar = {
-            TopAppBar(title = {
-                Text("Incoming Interests", style = MaterialTheme.typography.headlineSmall)
-            })
-        },
+        topBar = { NammaTopBar("Incoming Interests") },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { inner ->
         when {
