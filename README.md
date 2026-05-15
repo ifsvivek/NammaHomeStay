@@ -155,7 +155,18 @@ The fastest way to see the app is to install the **signed release APK** from the
 
 ➡ **[Download `NammaHomeStay-v1.0.0.apk` from Releases](https://github.com/ifsvivek/NammaHomeStay/releases/latest)** *(~17.8 MB, APK Signature Scheme v2)*
 
-Allow "install from unknown sources" on the device once, then open the APK. The app is wired to a live Firebase project (`nammahomestay-dfe84230`) — sign in with a phone number to start. If you want to point it at your own Firebase project instead, see *Getting started* below.
+Allow "install from unknown sources" on the device once, then open the APK. The app is wired to a live Firebase project (`nammahomestay-dfe84230`).
+
+### 🔑 Demo sign-in (use these — billing is not enabled, so real SMS is off)
+
+Firebase **Phone Authentication** on the free Spark plan can't send real SMS, so a fixed test number is whitelisted in the Firebase console. Use it as-is — nothing will be sent to a real phone:
+
+| Field | Value |
+|---|---|
+| Phone number | `9876543210` *(country code `+91` is pre-filled by the app)* |
+| OTP code | `123456` |
+
+Type the 10 digits, tap **Send code**, type the 6-digit code, tap **Verify & continue** — you're in. If you want to point the app at your own Firebase project instead, see *Getting started* below.
 
 ---
 
