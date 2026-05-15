@@ -47,8 +47,12 @@ data class Homestay(
     val checklist: VerificationChecklist = VerificationChecklist(),
     /** Visible to travellers. Only true when [checklist].isComplete and there is ≥1 photo. */
     val live: Boolean = false,
+    /** Optional pin on the map. Both null means "not pinned". */
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     val canGoLive: Boolean get() = checklist.isComplete && images.isNotEmpty() && name.isNotBlank()
+    val hasMapPin: Boolean get() = latitude != null && longitude != null
 
     companion object {
         const val MAX_PHOTOS = 6

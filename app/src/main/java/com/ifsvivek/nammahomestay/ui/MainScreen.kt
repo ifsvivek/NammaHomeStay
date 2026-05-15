@@ -19,9 +19,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ifsvivek.nammahomestay.R
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,10 +32,13 @@ import androidx.navigation.compose.rememberNavController
 import com.ifsvivek.nammahomestay.ui.components.ModeSwitchButton
 import com.ifsvivek.nammahomestay.ui.guide.GuideScreen
 import com.ifsvivek.nammahomestay.ui.home.HomeProfileScreen
+import com.ifsvivek.nammahomestay.ui.home.MapPinScreen
 import com.ifsvivek.nammahomestay.ui.inquiry.InquiryScreen
 import com.ifsvivek.nammahomestay.ui.menu.DailyMenuScreen
 import com.ifsvivek.nammahomestay.ui.navigation.TopDestination
 import kotlinx.coroutines.launch
+
+private const val ROUTE_PIN_LOCATION = "pin_location"
 
 /**
  * The signed-in shell: bottom navigation + the four destinations. Each screen
@@ -67,13 +72,19 @@ fun MainScreen(
     // Reused on every host screen that has a top bar (everything except the
     // chrome-less Today's Menu).
     val modeSwitchAction: @Composable () -> Unit = {
-        ModeSwitchButton(label = "Traveller mode", onClick = onSwitchToTraveller)
+        ModeSwitchButton(
+            label = stringResource(R.string.switch_to_traveller),
+            onClick = onSwitchToTraveller,
+        )
     }
+
+    val onTabRoute = currentRoute in TopDestination.entries.map { it.route }
 
     Scaffold(
         modifier = modifier,
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
+            if (!onTabRoute) return@Scaffold
             Column {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                 NavigationBar(
@@ -83,6 +94,7 @@ fun MainScreen(
                     TopDestination.entries.forEach { dest ->
                         val selected = currentRoute == dest.route
                         val showBadge = dest == TopDestination.INQUIRIES && pendingCount > 0
+                        val label = stringResource(dest.labelRes)
                         NavigationBarItem(
                             selected = selected,
                             onClick = { goTo(dest.route) },
@@ -98,15 +110,15 @@ fun MainScreen(
                                             }
                                         },
                                     ) {
-                                        Icon(dest.icon, contentDescription = dest.label)
+                                        Icon(dest.icon, contentDescription = label)
                                     }
                                 } else {
-                                    Icon(dest.icon, contentDescription = dest.label)
+                                    Icon(dest.icon, contentDescription = label)
                                 }
                             },
                             label = {
                                 Text(
-                                    dest.label,
+                                    label,
                                     style = MaterialTheme.typography.labelMedium,
                                     maxLines = 1,
                                 )
@@ -133,6 +145,7 @@ fun MainScreen(
             composable(TopDestination.HOME.route) {
                 HomeProfileScreen(
                     onOpenTodaysMenu = { goTo(TopDestination.MENU.route) },
+                    onPinLocation = { navController.navigate(ROUTE_PIN_LOCATION) },
                     trailingTopBarAction = modeSwitchAction,
                 )
             }
@@ -148,6 +161,9 @@ fun MainScreen(
             }
             composable(TopDestination.GUIDE.route) {
                 GuideScreen(onSignOut = onSignOut, trailingTopBarAction = modeSwitchAction)
+            }
+            composable(ROUTE_PIN_LOCATION) {
+                MapPinScreen(onBack = { navController.popBackStack() })
             }
         }
     }

@@ -1,3 +1,37 @@
 <resources>
     <string name="app_name">Namma HomeStay</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_menu">Menu</string>
+    <string name="nav_interests">Interests</string>
+    <string name="nav_help">Help</string>
+    <string name="nav_find">Find</string>
+    <string name="nav_sent">Sent</string>
+
+    <!-- Mode picker / welcome -->
+    <string name="welcome_title">Welcome to Namma HomeStay</string>
+    <string name="welcome_name_label">What should we call you?</string>
+    <string name="welcome_name_placeholder">e.g. Lakshmi or Ramesh</string>
+    <string name="welcome_prompt">What brings you here today?</string>
+    <string name="welcome_switch_hint">You can switch any time from the top of the screen.</string>
+    <string name="welcome_role_hosting_title">I\'m hosting</string>
+    <string name="welcome_role_hosting_sub">I have a homestay to offer</string>
+    <string name="welcome_role_travelling_title">I\'m travelling</string>
+    <string name="welcome_role_travelling_sub">I\'m looking for a homestay</string>
+
+    <!-- Mode-switch pill in the top bar -->
+    <string name="switch_to_host">Host mode</string>
+    <string name="switch_to_traveller">Traveller mode</string>
+
+    <!-- Login screen -->
+    <string name="login_subtitle">Welcome the world to your home</string>
+    <string name="login_enter_phone">Enter your phone number</string>
+    <string name="login_phone_label">Phone number</string>
+    <string name="login_send_sms_hint">We will send you a 6-digit code by SMS.</string>
+    <string name="login_send_code">Send code</string>
+    <string name="login_enter_code_sent_to">Enter the code we sent to</string>
+    <string name="login_code_label">6-digit code</string>
+    <string name="login_verify_continue">Verify &amp; continue</string>
+    <string name="login_change_number">Change number</string>
 </resources>

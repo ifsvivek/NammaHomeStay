@@ -25,7 +25,9 @@ import androidx.compose.material.icons.filled.Bed
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cottage
 import androidx.compose.material.icons.filled.LocalDrink
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Wash
 import androidx.compose.material3.CircularProgressIndicator
@@ -68,6 +70,7 @@ import com.ifsvivek.nammahomestay.ui.components.StatusPill
 @Composable
 fun HomeProfileScreen(
     onOpenTodaysMenu: () -> Unit,
+    onPinLocation: () -> Unit,
     modifier: Modifier = Modifier,
     trailingTopBarAction: (@Composable () -> Unit)? = null,
     viewModel: HomeViewModel = viewModel(),
@@ -163,7 +166,10 @@ fun HomeProfileScreen(
                 )
             }
 
-            // ── 3. Promises checklist ────────────────────────────────────
+            // ── 3. Map pin (optional) ────────────────────────────────────
+            item { MapPinCard(home = home, onTap = onPinLocation) }
+
+            // ── 4. Promises checklist ────────────────────────────────────
             item {
                 ChecklistCard(
                     cleanBedding = home?.checklist?.cleanBedding == true,
@@ -341,5 +347,47 @@ private fun ToggleRow(icon: ImageVector, label: String, checked: Boolean, onChec
             modifier = Modifier.weight(1f),
         )
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun MapPinCard(home: Homestay?, onTap: () -> Unit) {
+    val isPinned = home?.hasMapPin == true
+    SectionCard(title = "Pin your home on the map", icon = Icons.Filled.Map) {
+        if (isPinned) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Filled.Place,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp),
+                )
+                Spacer(Modifier.size(10.dp))
+                Text(
+                    "Pin saved · %.4f, %.4f".format(home!!.latitude!!, home.longitude!!),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            BigActionButton(
+                text = "Change pin",
+                icon = Icons.Filled.Map,
+                onClick = onTap,
+            )
+        } else {
+            Text(
+                "Drop a pin on the map so travellers can find you. Takes 5 seconds.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            BigActionButton(
+                text = "Pin on map",
+                icon = Icons.Filled.Place,
+                onClick = onTap,
+            )
+        }
     }
 }

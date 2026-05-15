@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">नम्म होमस्टे</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">घर</string>
+    <string name="nav_menu">मेन्यू</string>
+    <string name="nav_interests">रुचियाँ</string>
+    <string name="nav_help">मदद</string>
+    <string name="nav_find">खोजें</string>
+    <string name="nav_sent">भेजी</string>
+
+    <!-- Mode picker / welcome -->
+    <string name="welcome_title">नम्म होमस्टे में आपका स्वागत है</string>
+    <string name="welcome_name_label">हम आपको क्या कहकर बुलाएँ?</string>
+    <string name="welcome_name_placeholder">जैसे लक्ष्मी या रमेश</string>
+    <string name="welcome_prompt">आप यहाँ क्यों आए हैं?</string>
+    <string name="welcome_switch_hint">आप किसी भी समय ऊपर से बदल सकते हैं।</string>
+    <string name="welcome_role_hosting_title">मैं मेज़बानी कर रहा/रही हूँ</string>
+    <string name="welcome_role_hosting_sub">मेरे पास एक होमस्टे है</string>
+    <string name="welcome_role_travelling_title">मैं यात्रा कर रहा/रही हूँ</string>
+    <string name="welcome_role_travelling_sub">मुझे रहने के लिए जगह चाहिए</string>
+
+    <!-- Mode-switch pill in the top bar -->
+    <string name="switch_to_host">मेज़बान मोड</string>
+    <string name="switch_to_traveller">यात्री मोड</string>
+
+    <!-- Login screen -->
+    <string name="login_subtitle">अपने घर में दुनिया का स्वागत करें</string>
+    <string name="login_enter_phone">अपना फ़ोन नंबर डालें</string>
+    <string name="login_phone_label">फ़ोन नंबर</string>
+    <string name="login_send_sms_hint">हम आपको एसएमएस से 6 अंकों का कोड भेजेंगे।</string>
+    <string name="login_send_code">कोड भेजें</string>
+    <string name="login_enter_code_sent_to">कोड डालें — हमने इस नंबर पर भेजा है</string>
+    <string name="login_code_label">6 अंकों का कोड</string>
+    <string name="login_verify_continue">पुष्टि करें और आगे बढ़ें</string>
+    <string name="login_change_number">नंबर बदलें</string>
+</resources>

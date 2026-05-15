@@ -26,9 +26,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ifsvivek.nammahomestay.R
 import com.ifsvivek.nammahomestay.data.role.UserMode
 import com.ifsvivek.nammahomestay.ui.components.BigChoiceCard
 
@@ -63,7 +65,7 @@ fun ModePickerScreen(
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "Welcome to Namma HomeStay",
+            stringResource(R.string.welcome_title),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -73,8 +75,8 @@ fun ModePickerScreen(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it.take(40) },
-            label = { Text("What should we call you?") },
-            placeholder = { Text("e.g. Lakshmi or Ramesh") },
+            label = { Text(stringResource(R.string.welcome_name_label)) },
+            placeholder = { Text(stringResource(R.string.welcome_name_placeholder)) },
             singleLine = true,
             textStyle = MaterialTheme.typography.titleLarge,
             modifier = Modifier.fillMaxWidth(),
@@ -82,7 +84,7 @@ fun ModePickerScreen(
         Spacer(Modifier.height(32.dp))
 
         Text(
-            "What brings you here today?",
+            stringResource(R.string.welcome_prompt),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
@@ -92,15 +94,15 @@ fun ModePickerScreen(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             BigChoiceCard(
                 icon = Icons.Filled.Cottage,
-                title = "I'm hosting",
-                subtitle = "I have a homestay to offer",
+                title = stringResource(R.string.welcome_role_hosting_title),
+                subtitle = stringResource(R.string.welcome_role_hosting_sub),
                 enabled = nameValid,
                 onClick = { roleViewModel.choose(UserMode.HOST, name) },
             )
             BigChoiceCard(
                 icon = Icons.Filled.Luggage,
-                title = "I'm travelling",
-                subtitle = "I'm looking for a homestay",
+                title = stringResource(R.string.welcome_role_travelling_title),
+                subtitle = stringResource(R.string.welcome_role_travelling_sub),
                 enabled = nameValid,
                 onClick = { roleViewModel.choose(UserMode.TRAVELLER, name) },
             )
@@ -108,7 +110,7 @@ fun ModePickerScreen(
 
         Spacer(Modifier.height(16.dp))
         Text(
-            "You can switch any time from the top of the screen.",
+            stringResource(R.string.welcome_switch_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

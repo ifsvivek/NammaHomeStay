@@ -28,8 +28,8 @@ android {
         applicationId = "com.ifsvivek.nammahomestay"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -96,6 +96,11 @@ dependencies {
 
     // Mode (host/traveller) persistence
     implementation(libs.androidx.datastore.preferences)
+
+    // OpenStreetMap (Apache-2.0) for the map view + Play Services Location
+    // for the host's "Use my current location" pin shortcut.
+    implementation(libs.osmdroid.android)
+    implementation(libs.play.services.location)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))

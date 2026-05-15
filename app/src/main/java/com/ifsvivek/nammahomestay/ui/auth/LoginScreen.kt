@@ -26,11 +26,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.ifsvivek.nammahomestay.R
 import com.ifsvivek.nammahomestay.ui.components.BigActionButton
 import com.ifsvivek.nammahomestay.util.findActivity
 
@@ -62,12 +64,12 @@ fun LoginScreen(
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "Namma HomeStay",
+            stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            "Welcome the world to your home",
+            stringResource(R.string.login_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -98,7 +100,7 @@ private fun PhoneStep(
     context: android.content.Context,
 ) {
     Text(
-        "Enter your phone number",
+        stringResource(R.string.login_enter_phone),
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onBackground,
     )
@@ -106,7 +108,7 @@ private fun PhoneStep(
     OutlinedTextField(
         value = state.phoneDigits,
         onValueChange = viewModel::onPhoneChange,
-        label = { Text("Phone number") },
+        label = { Text(stringResource(R.string.login_phone_label)) },
         prefix = { Text("+91 ") },
         singleLine = true,
         textStyle = MaterialTheme.typography.headlineSmall,
@@ -115,14 +117,14 @@ private fun PhoneStep(
     )
     Spacer(Modifier.height(8.dp))
     Text(
-        "We will send you a 6-digit code by SMS.",
+        stringResource(R.string.login_send_sms_hint),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(Modifier.height(24.dp))
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
         BigActionButton(
-            text = "Send code",
+            text = stringResource(R.string.login_send_code),
             enabled = state.phoneValid && !state.busy,
             onClick = { context.findActivity()?.let(viewModel::requestCode) },
         )
@@ -133,7 +135,7 @@ private fun PhoneStep(
 @Composable
 private fun CodeStep(state: LoginUiState, viewModel: AuthViewModel) {
     Text(
-        "Enter the code we sent to",
+        stringResource(R.string.login_enter_code_sent_to),
         style = MaterialTheme.typography.titleLarge,
         color = MaterialTheme.colorScheme.onBackground,
         textAlign = TextAlign.Center,
@@ -147,7 +149,7 @@ private fun CodeStep(state: LoginUiState, viewModel: AuthViewModel) {
     OutlinedTextField(
         value = state.code,
         onValueChange = viewModel::onCodeChange,
-        label = { Text("6-digit code") },
+        label = { Text(stringResource(R.string.login_code_label)) },
         singleLine = true,
         textStyle = MaterialTheme.typography.headlineSmall,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -156,7 +158,7 @@ private fun CodeStep(state: LoginUiState, viewModel: AuthViewModel) {
     Spacer(Modifier.height(24.dp))
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth()) {
         BigActionButton(
-            text = "Verify & continue",
+            text = stringResource(R.string.login_verify_continue),
             enabled = state.codeValid && !state.busy,
             onClick = viewModel::submitCode,
         )
@@ -166,6 +168,6 @@ private fun CodeStep(state: LoginUiState, viewModel: AuthViewModel) {
     TextButton(onClick = viewModel::backToPhoneStep) {
         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
         Spacer(Modifier.size(8.dp))
-        Text("Change number", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.login_change_number), style = MaterialTheme.typography.bodyLarge)
     }
 }

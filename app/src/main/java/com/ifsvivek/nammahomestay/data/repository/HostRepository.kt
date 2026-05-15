@@ -62,6 +62,18 @@ class HostRepository(
         recomputeLive(uid)
     }
 
+    /** Saves the map pin the host dropped (or clears it when both are null). */
+    suspend fun updatePin(uid: String, latitude: Double?, longitude: Double?) {
+        homestayDoc(uid).set(
+            mapOf(
+                "hostId" to uid,
+                "latitude" to latitude,
+                "longitude" to longitude,
+            ),
+            SetOptions.merge(),
+        ).await()
+    }
+
     /** Removes the photo at [index] in the current list (the order the UI shows). */
     suspend fun removePhotoAt(uid: String, index: Int) {
         val current = currentHomestay(uid)

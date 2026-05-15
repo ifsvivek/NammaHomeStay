@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">ನಮ್ಮ ಹೋಮ್‌ಸ್ಟೇ</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">ಮನೆ</string>
+    <string name="nav_menu">ಮೆನು</string>
+    <string name="nav_interests">ಆಸಕ್ತಿಗಳು</string>
+    <string name="nav_help">ಸಹಾಯ</string>
+    <string name="nav_find">ಹುಡುಕು</string>
+    <string name="nav_sent">ಕಳುಹಿಸಿದ</string>
+
+    <!-- Mode picker / welcome -->
+    <string name="welcome_title">ನಮ್ಮ ಹೋಮ್‌ಸ್ಟೇಗೆ ಸ್ವಾಗತ</string>
+    <string name="welcome_name_label">ನಿಮ್ಮನ್ನು ಏನೆಂದು ಕರೆಯೋಣ?</string>
+    <string name="welcome_name_placeholder">ಉದಾ. ಲಕ್ಷ್ಮಿ ಅಥವಾ ರಮೇಶ</string>
+    <string name="welcome_prompt">ನೀವು ಇಲ್ಲಿಗೆ ಏಕೆ ಬಂದಿದ್ದೀರಿ?</string>
+    <string name="welcome_switch_hint">ನೀವು ಯಾವಾಗ ಬೇಕಾದರೂ ಮೇಲಿನಿಂದ ಬದಲಾಯಿಸಬಹುದು.</string>
+    <string name="welcome_role_hosting_title">ನಾನು ಆತಿಥ್ಯ ನೀಡುತ್ತೇನೆ</string>
+    <string name="welcome_role_hosting_sub">ನನ್ನ ಬಳಿ ಹೋಮ್‌ಸ್ಟೇ ಇದೆ</string>
+    <string name="welcome_role_travelling_title">ನಾನು ಪ್ರಯಾಣಿಸುತ್ತಿದ್ದೇನೆ</string>
+    <string name="welcome_role_travelling_sub">ನಾನು ಉಳಿಯಲು ಸ್ಥಳ ಹುಡುಕುತ್ತಿದ್ದೇನೆ</string>
+
+    <!-- Mode-switch pill in the top bar -->
+    <string name="switch_to_host">ಆತಿಥೇಯ ಮೋಡ್</string>
+    <string name="switch_to_traveller">ಪ್ರಯಾಣಿಕ ಮೋಡ್</string>
+
+    <!-- Login screen -->
+    <string name="login_subtitle">ನಿಮ್ಮ ಮನೆಗೆ ಜಗತ್ತನ್ನು ಸ್ವಾಗತಿಸಿ</string>
+    <string name="login_enter_phone">ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="login_phone_label">ಫೋನ್ ಸಂಖ್ಯೆ</string>
+    <string name="login_send_sms_hint">ನಾವು ನಿಮಗೆ ಎಸ್‌ಎಂಎಸ್ ಮೂಲಕ 6 ಅಂಕಿಯ ಕೋಡ್ ಕಳುಹಿಸುತ್ತೇವೆ.</string>
+    <string name="login_send_code">ಕೋಡ್ ಕಳುಹಿಸಿ</string>
+    <string name="login_enter_code_sent_to">ನಾವು ಕಳುಹಿಸಿದ ಕೋಡ್ ಅನ್ನು ನಮೂದಿಸಿ</string>
+    <string name="login_code_label">6 ಅಂಕಿಯ ಕೋಡ್</string>
+    <string name="login_verify_continue">ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮುಂದುವರಿಯಿರಿ</string>
+    <string name="login_change_number">ಸಂಖ್ಯೆ ಬದಲಾಯಿಸಿ</string>
+</resources>

@@ -3,6 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Only needed for the host's "Use my current location" shortcut on the map
+         picker. Runtime-requested. We ask for COARSE only — village-level
+         accuracy is plenty for a homestay pin. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <!-- We only DIAL (not place calls), so CALL_PHONE is intentionally NOT requested. -->
     <queries>

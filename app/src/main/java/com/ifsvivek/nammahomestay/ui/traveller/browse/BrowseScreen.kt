@@ -17,8 +17,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Cottage
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
@@ -48,9 +50,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ifsvivek.nammahomestay.data.model.Homestay
 import com.ifsvivek.nammahomestay.ui.components.EmptyState
+import com.ifsvivek.nammahomestay.ui.components.INDIA_CENTRE
+import com.ifsvivek.nammahomestay.ui.components.MapMarker
 import com.ifsvivek.nammahomestay.ui.components.NammaTopBar
+import com.ifsvivek.nammahomestay.ui.components.OsmMap
 import com.ifsvivek.nammahomestay.ui.components.PhotoImage
 import com.ifsvivek.nammahomestay.ui.components.StatusPill
+import org.osmdroid.util.GeoPoint
 
 /** Traveller-side browse list of every LIVE homestay. Tap a card to open the detail screen. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +68,7 @@ fun BrowseScreen(
     viewModel: BrowseViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var mapView by remember { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
@@ -88,7 +95,7 @@ fun BrowseScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
-            // Live count + sort dropdown.
+            // Live count + view toggle + sort dropdown.
             if (!state.loading && state.homestays.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -102,6 +109,8 @@ fun BrowseScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
+                    ViewToggleButton(mapView = mapView, onToggle = { mapView = !mapView })
+                    Spacer(Modifier.size(8.dp))
                     SortMenu(current = state.sort, onPick = viewModel::onSortChange)
                 }
             }
@@ -131,6 +140,27 @@ fun BrowseScreen(
                         icon = Icons.Filled.Search,
                         title = "Nothing matched “${state.query}”",
                         subtitle = "Try a shorter word, or clear the search to see every home.",
+                    )
+                }
+
+                mapView -> {
+                    val pinned = state.filtered.filter { it.hasMapPin }
+                    val markers = pinned.map {
+                        MapMarker(
+                            id = it.id,
+                            lat = it.latitude!!,
+                            lng = it.longitude!!,
+                            title = it.name.ifBlank { "A homestay" },
+                            snippet = it.location.ifBlank { null },
+                        )
+                    }
+                    val centre = pinned.firstOrNull()?.let { GeoPoint(it.latitude!!, it.longitude!!) } ?: INDIA_CENTRE
+                    OsmMap(
+                        modifier = Modifier.fillMaxSize(),
+                        center = centre,
+                        zoom = if (pinned.isEmpty()) 4.5 else 10.0,
+                        markers = markers,
+                        onMarkerClick = { onOpenHomestay(it.id) },
                     )
                 }
 
@@ -295,6 +325,34 @@ private fun SortMenu(current: BrowseSort, onPick: (BrowseSort) -> Unit) {
                     },
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ViewToggleButton(mapView: Boolean, onToggle: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = if (mapView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
+        onClick = onToggle,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                if (mapView) Icons.AutoMirrored.Filled.List else Icons.Filled.Map,
+                contentDescription = null,
+                tint = if (mapView) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(6.dp))
+            Text(
+                if (mapView) "List" else "Map",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (mapView) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer,
+            )
         }
     }
 }

@@ -13,7 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ifsvivek.nammahomestay.R
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -53,8 +55,9 @@ fun TravellerMainScreen(
     // The mode-switch pill is shown on the *top* tabs. Hide it on the detail
     // screen so the back arrow keeps its prominence.
     val showSwitch = currentRoute in TravellerDestination.entries.map { it.route }
+    val hostModeLabel = stringResource(R.string.switch_to_host)
     val modeSwitchAction: (@Composable () -> Unit)? = if (showSwitch) {
-        { ModeSwitchButton(label = "Host mode", onClick = onSwitchToHost) }
+        { ModeSwitchButton(label = hostModeLabel, onClick = onSwitchToHost) }
     } else null
 
     Scaffold(
@@ -68,13 +71,14 @@ fun TravellerMainScreen(
                         tonalElevation = 0.dp,
                     ) {
                         TravellerDestination.entries.forEach { dest ->
+                            val label = stringResource(dest.labelRes)
                             NavigationBarItem(
                                 selected = currentRoute == dest.route,
                                 onClick = { goTo(dest.route) },
-                                icon = { Icon(dest.icon, contentDescription = dest.label) },
+                                icon = { Icon(dest.icon, contentDescription = label) },
                                 label = {
                                     Text(
-                                        dest.label,
+                                        label,
                                         style = MaterialTheme.typography.labelMedium,
                                         maxLines = 1,
                                     )
