@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -50,7 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ifsvivek.nammahomestay.data.model.Homestay
 import com.ifsvivek.nammahomestay.ui.components.EmptyState
-import com.ifsvivek.nammahomestay.ui.components.INDIA_CENTRE
 import com.ifsvivek.nammahomestay.ui.components.MapMarker
 import com.ifsvivek.nammahomestay.ui.components.NammaTopBar
 import com.ifsvivek.nammahomestay.ui.components.OsmMap
@@ -145,23 +144,71 @@ fun BrowseScreen(
 
                 mapView -> {
                     val pinned = state.filtered.filter { it.hasMapPin }
-                    val markers = pinned.map {
-                        MapMarker(
-                            id = it.id,
-                            lat = it.latitude!!,
-                            lng = it.longitude!!,
-                            title = it.name.ifBlank { "A homestay" },
-                            snippet = it.location.ifBlank { null },
-                        )
+                    val unpinnedCount = state.filtered.size - pinned.size
+
+                    if (pinned.isEmpty()) {
+                        Box(
+                            Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            EmptyState(
+                                icon = Icons.Filled.Map,
+                                title = "No homes pinned on the map yet",
+                                subtitle = if (unpinnedCount > 0) {
+                                    "$unpinnedCount home${if (unpinnedCount == 1) " hasn't" else "s haven't"} pinned a location. Switch back to the List view to see them."
+                                } else {
+                                    "Live homes will appear here once their hosts pin a location."
+                                },
+                            )
+                        }
+                    } else {
+                        Column(Modifier.fillMaxSize()) {
+                            if (unpinnedCount > 0) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Place,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(14.dp),
+                                    )
+                                    Spacer(Modifier.size(4.dp))
+                                    Text(
+                                        "${pinned.size} of ${state.filtered.size} pinned · others are in List view",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                                    .clip(RoundedCornerShape(16.dp)),
+                            ) {
+                                OsmMap(
+                                    modifier = Modifier.fillMaxSize(),
+                                    center = GeoPoint(pinned.first().latitude!!, pinned.first().longitude!!),
+                                    zoom = 12.0,
+                                    markers = pinned.map {
+                                        MapMarker(
+                                            id = it.id,
+                                            lat = it.latitude!!,
+                                            lng = it.longitude!!,
+                                            title = it.name.ifBlank { "A homestay" },
+                                            snippet = it.location.ifBlank { null },
+                                        )
+                                    },
+                                    onMarkerClick = { onOpenHomestay(it.id) },
+                                )
+                            }
+                        }
                     }
-                    val centre = pinned.firstOrNull()?.let { GeoPoint(it.latitude!!, it.longitude!!) } ?: INDIA_CENTRE
-                    OsmMap(
-                        modifier = Modifier.fillMaxSize(),
-                        center = centre,
-                        zoom = if (pinned.isEmpty()) 4.5 else 10.0,
-                        markers = markers,
-                        onMarkerClick = { onOpenHomestay(it.id) },
-                    )
                 }
 
                 else -> LazyColumn(
@@ -297,7 +344,7 @@ private fun SortMenu(current: BrowseSort, onPick: (BrowseSort) -> Unit) {
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 Icon(
-                    Icons.Filled.Sort,
+                    Icons.AutoMirrored.Filled.Sort,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.size(18.dp),
