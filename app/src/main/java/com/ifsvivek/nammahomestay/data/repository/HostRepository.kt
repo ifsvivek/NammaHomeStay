@@ -5,7 +5,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.ifsvivek.nammahomestay.data.FirestoreCollections
 import com.ifsvivek.nammahomestay.data.model.Homestay
-import com.ifsvivek.nammahomestay.data.model.Host
 import com.ifsvivek.nammahomestay.data.model.VerificationChecklist
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -13,28 +12,16 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 /**
- * Reads / writes the host's profile ([Host]) and their "digital shopfront"
- * ([Homestay]). For the MVP there is exactly one homestay per host, so the
- * homestay document id is the host's uid. Photos live as JPEG [Blob]s on the
- * homestay document (no Cloud Storage on the free plan).
+ * Reads / writes the host's "digital shopfront" ([Homestay]). For the MVP there
+ * is exactly one homestay per host, so the homestay document id is the host's
+ * uid. Photos live as JPEG [Blob]s on the homestay document (no Cloud Storage
+ * on the free plan).
  */
 class HostRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) {
     private fun hostDoc(uid: String) = db.collection(FirestoreCollections.HOSTS).document(uid)
     private fun homestayDoc(uid: String) = db.collection(FirestoreCollections.HOMESTAYS).document(uid)
-
-    /** Creates the host (and an empty shopfront) on first login if they don't exist yet. */
-    suspend fun ensureHostProfile(uid: String, phone: String) {
-        val snap = hostDoc(uid).get().await()
-        if (!snap.exists()) {
-            hostDoc(uid).set(Host(uid = uid, phone = phone, verifiedStatus = "new")).await()
-        }
-        val homeSnap = homestayDoc(uid).get().await()
-        if (!homeSnap.exists()) {
-            homestayDoc(uid).set(Homestay(id = uid, hostId = uid)).await()
-        }
-    }
 
     /** Live view of the shopfront — drives the "Setup your Home" progress everywhere. */
     fun observeHomestay(uid: String): Flow<Homestay?> = callbackFlow {
@@ -47,9 +34,6 @@ class HostRepository(
         }
         awaitClose { reg.remove() }
     }
-
-    suspend fun getHost(uid: String): Host? =
-        hostDoc(uid).get().await().toObject(Host::class.java)
 
     /** Saves the name + location the host typed (merges, leaves photos/checklist alone). */
     suspend fun updateBasics(uid: String, name: String, location: String) {

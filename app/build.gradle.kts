@@ -94,6 +94,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.exifinterface)
 
+    // Mode (host/traveller) persistence
+    implementation(libs.androidx.datastore.preferences)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

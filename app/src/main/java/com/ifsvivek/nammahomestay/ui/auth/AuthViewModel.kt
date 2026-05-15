@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthProvider
 import com.ifsvivek.nammahomestay.data.repository.AuthRepository
-import com.ifsvivek.nammahomestay.data.repository.HostRepository
 import com.ifsvivek.nammahomestay.data.repository.OtpEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +37,6 @@ data class LoginUiState(
  */
 class AuthViewModel(
     private val authRepo: AuthRepository = AuthRepository(),
-    private val hostRepo: HostRepository = HostRepository(),
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginUiState(isLoggedIn = authRepo.isLoggedIn))
@@ -110,11 +108,10 @@ class AuthViewModel(
     private suspend fun finishSignIn(result: Result<Unit>) {
         result.fold(
             onSuccess = {
-                val uid = authRepo.currentUid
-                val phone = authRepo.currentPhone ?: _state.value.e164Phone
-                if (uid != null) runCatching { hostRepo.ensureHostProfile(uid, phone) }
                 _state.update { it.copy(sending = false, verifying = false) }
                 // isLoggedIn flips through authListener -> navigation reacts.
+                // Host docs are created lazily on first write (set/merge), so a
+                // user who only ever travels never creates an empty homestay.
             },
             onFailure = { e ->
                 _state.update {

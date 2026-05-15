@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
+import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -36,7 +37,16 @@ class AuthRepository(
 ) {
     val currentUid: String? get() = auth.currentUser?.uid
     val currentPhone: String? get() = auth.currentUser?.phoneNumber
+    val currentDisplayName: String? get() = auth.currentUser?.displayName
     val isLoggedIn: Boolean get() = auth.currentUser != null
+
+    /** Sets the user's display name on the Firebase Auth profile. Used for the traveller's [Inquiry.guestName]. */
+    suspend fun updateDisplayName(name: String): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("Not signed in")
+        user.updateProfile(UserProfileChangeRequest.Builder().setDisplayName(name.trim()).build()).await()
+        user.reload().await()
+        Unit
+    }
 
     /**
      * Kicks off verification for an E.164 number (e.g. "+91XXXXXXXXXX") and streams
