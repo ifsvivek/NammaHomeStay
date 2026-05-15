@@ -13,29 +13,40 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.ifsvivek.nammahomestay.data.seed.SampleDataSeeder
 import com.ifsvivek.nammahomestay.ui.components.BigActionButton
 import com.ifsvivek.nammahomestay.ui.components.NammaTopBar
 import com.ifsvivek.nammahomestay.ui.components.SectionCard
 import com.ifsvivek.nammahomestay.ui.theme.CallGreen
 import com.ifsvivek.nammahomestay.util.dialPhoneNumber
+import kotlinx.coroutines.launch
 
 /** Replace with your real support line before shipping. */
 private const val SUPPORT_PHONE = "+911800000000"
@@ -78,6 +89,10 @@ fun GuideScreen(
     trailingTopBarAction: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    var seeding by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
@@ -89,6 +104,7 @@ fun GuideScreen(
                 } else null,
             )
         },
+        snackbarHost = { SnackbarHost(snackbar) },
     ) { inner ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(inner),
@@ -119,6 +135,44 @@ fun GuideScreen(
                         containerColor = CallGreen,
                         contentColor = Color.White,
                     )
+                }
+            }
+            item {
+                SectionCard(title = "Demo tools", icon = Icons.Filled.AutoFixHigh) {
+                    Text(
+                        "Populate the marketplace with five sample homestays " +
+                            "(with reviews + today's menus). Safe to run more than once.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    androidx.compose.foundation.layout.Box(
+                        contentAlignment = androidx.compose.ui.Alignment.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        BigActionButton(
+                            text = if (seeding) "Adding…" else "Add demo data",
+                            icon = Icons.Filled.AutoFixHigh,
+                            enabled = !seeding,
+                            onClick = {
+                                seeding = true
+                                scope.launch {
+                                    val result = runCatching { SampleDataSeeder().seed() }
+                                    seeding = false
+                                    result.onSuccess { r ->
+                                        snackbar.showSnackbar(
+                                            "Added ${r.homestays} homes · ${r.menus} menus · ${r.reviews} reviews",
+                                        )
+                                    }.onFailure { e ->
+                                        snackbar.showSnackbar(
+                                            "Seed failed: ${e.message ?: "unknown error"}",
+                                        )
+                                    }
+                                }
+                            },
+                        )
+                        if (seeding) CircularProgressIndicator(strokeWidth = 3.dp)
+                    }
                 }
             }
             item {

@@ -13,7 +13,7 @@ Built for rural farmers and homemakers with low digital literacy — big buttons
 ![Backend](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-FFCA28?logo=firebase&logoColor=black)
 
 [![Download APK](https://img.shields.io/github/v/release/ifsvivek/NammaHomeStay?label=Download%20signed%20APK&logo=android&color=3DDC84)](https://github.com/ifsvivek/NammaHomeStay/releases/latest)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](#installation)
+[![CI](https://github.com/ifsvivek/NammaHomeStay/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/ifsvivek/NammaHomeStay/actions/workflows/build.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue)](#license)
 
 <br/>
@@ -35,8 +35,9 @@ Built for rural farmers and homemakers with low digital literacy — big buttons
 7. [Installation](#installation)
 8. [Run](#run)
 9. [Firestore data model](#firestore-data-model)
-10. [Future improvements](#future-improvements)
-11. [License](#license)
+10. [Documentation](#documentation)
+11. [Future improvements](#future-improvements)
+12. [License](#license)
 
 ---
 
@@ -57,22 +58,28 @@ The design rule throughout is **"Less is More"**: large touch targets, high-cont
 
 ## Demo
 
-The fastest way to see the app is to install the **signed release APK**:
+The fastest way to see the app is to install the **signed release APK** from the latest GitHub release:
 
-➡ **[Download `NammaHomeStay-v1.0.0.apk` from Releases](https://github.com/ifsvivek/NammaHomeStay/releases/latest)** *(~17.8 MB, APK Signature Scheme v2)*
+➡ **[Download the latest APK from Releases](https://github.com/ifsvivek/NammaHomeStay/releases/latest)** *(R8-minified, APK Signature Scheme v2)*
 
 Allow "install from unknown sources" on the device once, then open the APK. The app is wired to a live Firebase project (`nammahomestay-dfe84230`).
 
-### 🔑 Demo sign-in (use these — billing is not enabled, so real SMS is off)
+### 🔑 Demo sign-in (real SMS is off — Spark plan)
 
-Firebase **Phone Authentication** on the free Spark plan can't send real SMS, so a fixed test number is whitelisted in the Firebase console. Use it as-is — nothing will be sent to a real phone:
+Firebase **Phone Authentication** on the free Spark plan can't send real SMS, so two test numbers are whitelisted in the Firebase console. Use either — nothing will be sent to a real phone. Use one as the **host**, the other as a **traveller** to see both sides of the marketplace at once.
 
-| Field | Value |
-|---|---|
-| Phone number | `9876543210` *(country code `+91` is pre-filled by the app)* |
-| OTP code | `123456` |
+| Phone number      | OTP code | Suggested role                                      |
+| ----------------- | -------- | --------------------------------------------------- |
+| `+91 98765 43210` | `123456` | **Host** (set up your shopfront, post today's menu) |
+| `+91 99887 76655` | `123456` | **Traveller** (browse, send "I'm interested")       |
 
-Type the 10 digits, tap **Send code**, type the 6-digit code, tap **Verify & continue** — you're in. If you want to point the app at your own Firebase project instead, see [Installation](#installation) below.
+Type the 10 digits *(country code `+91` is pre-filled by the app)*, tap **Send code**, type `123456`, tap **Verify & continue** — you're in. On first sign-in the **welcome screen** asks for your name and "I'm hosting" vs "I'm travelling". You can flip between modes any time from the pill in the top-right.
+
+### 🧪 Populate the marketplace with sample data
+
+The first time you sign in as a host, scroll to **Help** → **Demo tools** → tap **"Add demo data"** to seed five realistic homestays (Sakleshpur, Coorg, Chikmagalur, Mysuru, Wayanad) — each with photos, today's menu, map pins, and 2–5 reviews. Then switch to traveller mode and the marketplace is full.
+
+If you'd rather point the app at your own Firebase project, see [Installation](#installation) and [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md).
 
 ---
 
@@ -133,18 +140,23 @@ Left → right: **My Home** (setup progress, status pill, name + photos + promis
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
-| Language | Kotlin 2.2 |
-| UI | Jetpack Compose (Material 3, Compose BoM 2026.02) |
-| Architecture | MVVM + a thin repository layer |
-| Auth | Firebase Phone Auth (OTP) |
-| Database | Cloud Firestore (real-time listeners, on-device offline cache) |
-| Images | **Stored as compressed JPEG `Blob`s inside Firestore documents** — see note below. Coil renders the local pick-preview; a custom `PhotoImage` decodes stored blobs off the main thread. |
-| Image picking | `ActivityResultContracts.GetContent` |
-| Navigation | Navigation-Compose (4-tab bottom bar) |
-| Build | Gradle (Kotlin DSL) + version catalog; AGP 9.2.1; minSdk 24 / targetSdk 36 |
-| Tests | JUnit 4 unit tests on the domain logic ([`HomestayLogicTest`](app/src/test/java/com/ifsvivek/nammahomestay/data/model/HomestayLogicTest.kt)) |
+| Layer                | Choice                                                                                                                                                                                                                                                                                             |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Language             | Kotlin 2.2                                                                                                                                                                                                                                                                                         |
+| UI                   | Jetpack Compose (Material 3, Compose BoM 2026.02)                                                                                                                                                                                                                                                  |
+| Architecture         | MVVM + a thin repository layer                                                                                                                                                                                                                                                                     |
+| Auth                 | Firebase Phone Auth (OTP)                                                                                                                                                                                                                                                                          |
+| Database             | Cloud Firestore (real-time snapshot listeners, on-device offline cache, **no composite indexes needed** — every query is a single `whereEqualTo` with client-side sorting)                                                                                                                         |
+| Images               | **Stored as compressed JPEG `Blob`s inside Firestore documents** — see note below. Coil renders the local pick-preview; a custom `PhotoImage` decodes stored blobs off the main thread.                                                                                                            |
+| Image picking        | `ActivityResultContracts.GetContent`                                                                                                                                                                                                                                                               |
+| Navigation           | Navigation-Compose, two bottom-nav shells (host has 4 tabs, traveller has 3) gated by the persisted user mode.                                                                                                                                                                                     |
+| Mode persistence     | DataStore Preferences (host ↔ traveller switch survives app restart, per device).                                                                                                                                                                                                                  |
+| Maps                 | **OpenStreetMap** tiles via [osmdroid](https://github.com/osmdroid/osmdroid) (Apache-2.0) — **no Google Maps API key**. Host pins a location with tap-to-place + "Use my current location" (Fused Location, runtime-requests `ACCESS_COARSE_LOCATION`); traveller has a list/map toggle on Browse. |
+| Localization         | English (default) + Hindi (`values-hi`) + Kannada (`values-kn`) — Android picks the locale automatically from the device language.                                                                                                                                                                 |
+| Release optimisation | **R8 + resource shrinking** with explicit `-keep` rules for the Firestore POJOs and osmdroid (see [`app/proguard-rules.pro`](app/proguard-rules.pro)).                                                                                                                                             |
+| Build                | Gradle (Kotlin DSL) + version catalog; AGP 9.2.1; minSdk 24 / targetSdk 36 / compileSdk 36. Signed release APK uses APK Signature Scheme v2.                                                                                                                                                       |
+| Tests                | JUnit 4 unit tests on the domain logic ([`HomestayLogicTest`](app/src/test/java/com/ifsvivek/nammahomestay/data/model/HomestayLogicTest.kt)).                                                                                                                                                      |
+| CI                   | GitHub Actions runs `testDebugUnitTest` + `assembleDebug` + `assembleRelease` (unsigned) on every push to `main` and every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml).                                                                                                  |
 
 ### A note on photos & the free Firebase plan
 
@@ -318,19 +330,29 @@ reviews/{autoId}
   timestamp: timestamp
 ```
 
-Security rules are in [`firestore.rules`](firestore.rules) — a host can only read/write their own `hosts` / `homestays` / `daily_menus`; a traveller can create an `inquiry` with their own `travellerId` and read what they sent; reviews are world-readable for any signed-in user, and only the review's author can create or edit it (rating constrained to 1..5).
+Security rules are in [`firestore.rules`](firestore.rules) — a host can only read/write their own `hosts` / `homestays` / `daily_menus`; a traveller can create an `inquiry` with their own `travellerId` and read what they sent; reviews are world-readable for any signed-in user, and only the review's author can create or edit it (rating constrained to 1..5). Sample data (`sample-*` doc ids) is writable by any signed-in user so the in-app **Add demo data** seeder works.
+
+---
+
+## Documentation
+
+Longer-form docs live under [`docs/`](docs/):
+
+| File                                               | What's inside                                                                                                                                                              |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)     | The MVVM + repository layering, package map, every "why" decision (no Cloud Storage, composite-index-free queries, OSM-not-Google-Maps, mode-switch state machine).        |
+| [`docs/FIREBASE_SETUP.md`](docs/FIREBASE_SETUP.md) | Step-by-step Firebase console setup if you're pointing the app at your own project (enable Phone, create Firestore, deploy rules, register test numbers, troubleshooting). |
+| [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)     | Dev-environment setup, the typical "adding a feature" flow across data → repo → VM → screen → rules, commit message conventions, PR checklist, release process.            |
 
 ---
 
 ## Future improvements
 
-- **Cloud Storage for photos** — the current 6-photo cap and 350 KB-per-photo budget exist only because we're on the free Spark plan. On the Blaze plan we'd move blobs into Cloud Storage and remove both limits.
+- **Cloud Storage for photos** — the current 6-photo cap and ~350 KB-per-photo budget exist only because we're on the free Spark plan. On the Blaze plan we'd move blobs into Cloud Storage and remove both limits.
 - **Push notifications (FCM)** — buzz the host when a new inquiry arrives and the traveller when the host marks "called"; today both sides just rely on live Firestore listeners while the app is open.
-- **Map view + nearby search** — Google Maps Compose with a pin per LIVE homestay, ordered by distance from the traveller.
 - **Availability calendar + accept/decline** — a host blocks dates; travellers see them; the host accepts or declines an inquiry instead of always picking up the phone.
-- **Localization (Kannada, Hindi, Tamil)** — strings are still English-only; the target audience would benefit from regional languages.
-- **R8 / minification** — release build currently has `isMinifyEnabled = false` because the Firestore POJO models (`Host` / `Homestay` / `DailyMenu` / `Inquiry` / `Review`) need explicit `-keep` rules before R8 obfuscation is safe. Adding those rules is a small, contained change.
-- **More unit + UI tests** — only the LIVE-eligibility rules are unit-tested today. Compose UI tests for the seven screens, and a Firestore-emulator integration test for the repositories, are obvious next steps.
+- **More languages** — Tamil, Telugu, Marathi. The infrastructure (per-locale `strings.xml`) is in place; what's missing is more *strings* extracted from the host screens.
+- **More unit + UI tests** — only the LIVE-eligibility rules are unit-tested today. Compose UI tests for the eight screens, and a Firestore-emulator integration test for the repositories, are obvious next steps.
 - **App Check / abuse hardening** — turn on Firebase App Check (Play Integrity provider) before opening sign-in to real numbers in production.
 - **Real support phone number** — `SUPPORT_PHONE` in [`GuideScreen.kt`](app/src/main/java/com/ifsvivek/nammahomestay/ui/guide/GuideScreen.kt) is a placeholder (`+911800000000`) — swap before shipping.
 

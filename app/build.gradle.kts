@@ -28,8 +28,8 @@ android {
         applicationId = "com.ifsvivek.nammahomestay"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,10 +47,11 @@ android {
 
     buildTypes {
         release {
-            // Kept off for now: enabling R8 would obfuscate the Firestore POJO
-            // models (Host/Homestay/DailyMenu/Inquiry) that toObject() reflects
-            // over, which needs explicit -keep rules first. Hardening = a TODO.
-            isMinifyEnabled = false
+            // R8 is on with explicit -keep rules for our Firestore POJOs +
+            // osmdroid (see app/proguard-rules.pro). Resource shrinking strips
+            // unused drawables / strings from the merged manifest.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

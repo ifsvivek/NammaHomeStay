@@ -8,6 +8,10 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    // A doc id with the `sample-` prefix is demo data seeded by SampleDataSeeder.
+    // Anyone signed-in can read or rewrite it — handy for showing a populated
+    // marketplace from any account.
+    function isSample(anyId) { return anyId.matches('sample-.*'); }
 
     // A host's own profile (verifiedStatus is mirrored here).
     match /hosts/{uid} {
@@ -15,17 +19,18 @@ service cloud.firestore {
       allow write: if isOwner(uid);
     }
 
-    // The "digital shopfront". Owner writes. Any signed-in user can read so the
-    // traveller side can browse LIVE homestays and open detail screens.
-    match /homestays/{uid} {
+    // The "digital shopfront". Owner writes by doc-id-equals-uid convention;
+    // sample-* docs are writable by anyone signed-in (demo data). Anyone signed
+    // in can read so the traveller side can browse LIVE homestays.
+    match /homestays/{anyId} {
       allow read: if signedIn();
-      allow write: if isOwner(uid);
+      allow write: if signedIn() && (anyId == request.auth.uid || isSample(anyId));
     }
 
-    // Today's menu — one doc per host, id == host uid.
-    match /daily_menus/{uid} {
+    // Today's menu — one doc per host (id == host uid), plus sample-* docs.
+    match /daily_menus/{anyId} {
       allow read: if signedIn();
-      allow write: if isOwner(uid);
+      allow write: if signedIn() && (anyId == request.auth.uid || isSample(anyId));
     }
 
     // Inquiries: a traveller sends one to a host. Both sides can read their own
@@ -50,17 +55,22 @@ service cloud.firestore {
     }
 
     // Reviews: any signed-in user can read; only the author can create / edit
-    // their own; the rating must be a 1–5 integer.
+    // their own; the rating must be a 1–5 integer. Sample reviews (sample-*)
+    // are writable by anyone signed-in to support the demo seeder.
     match /reviews/{reviewId} {
       allow read: if signedIn();
-      allow create: if signedIn()
-        && request.resource.data.travellerId == request.auth.uid
-        && request.resource.data.homestayId is string
-        && request.resource.data.rating is int
-        && request.resource.data.rating >= 1
-        && request.resource.data.rating <= 5;
-      allow update, delete: if signedIn()
-        && resource.data.travellerId == request.auth.uid;
+      allow create: if signedIn() && (
+        isSample(reviewId) ||
+        (request.resource.data.travellerId == request.auth.uid
+          && request.resource.data.homestayId is string
+          && request.resource.data.rating is int
+          && request.resource.data.rating >= 1
+          && request.resource.data.rating <= 5)
+      );
+      allow update, delete: if signedIn() && (
+        isSample(reviewId) ||
+        resource.data.travellerId == request.auth.uid
+      );
     }
   }
 }
