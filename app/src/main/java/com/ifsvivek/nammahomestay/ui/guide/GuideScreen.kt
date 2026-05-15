@@ -75,12 +75,20 @@ private val guideItems = listOf(
 fun GuideScreen(
     modifier: Modifier = Modifier,
     onSignOut: () -> Unit = {},
+    trailingTopBarAction: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
-        topBar = { NammaTopBar("Guide & Help") },
+        topBar = {
+            NammaTopBar(
+                title = "Guide & Help",
+                trailing = if (trailingTopBarAction != null) {
+                    { trailingTopBarAction() }
+                } else null,
+            )
+        },
     ) { inner ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(inner),

@@ -58,6 +58,7 @@ import java.util.Date
 @Composable
 fun InquiryScreen(
     modifier: Modifier = Modifier,
+    trailingTopBarAction: (@Composable () -> Unit)? = null,
     viewModel: InquiryViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -75,7 +76,14 @@ fun InquiryScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0),
-        topBar = { NammaTopBar("Incoming Interests") },
+        topBar = {
+            NammaTopBar(
+                title = "Incoming Interests",
+                trailing = if (trailingTopBarAction != null) {
+                    { trailingTopBarAction() }
+                } else null,
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { inner ->
         when {

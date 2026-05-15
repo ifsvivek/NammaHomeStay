@@ -11,15 +11,18 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 /**
- * The "Inquiry Box": travellers (eventually, the traveller-facing app) drop an
- * interest into `inquiries`; the host sees newest-first and taps to call back.
+ * The "Inquiry Box". A traveller hits "I'm interested" on a homestay detail and
+ * a doc is written here; the host sees it newest-first and taps to call back.
+ * The same collection is queried from both sides (filtered by [Inquiry.hostId]
+ * for the host's tab, or by [Inquiry.travellerId] for the traveller's tab).
  */
 class InquiryRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
 ) {
     private val col = db.collection(FirestoreCollections.INQUIRIES)
 
-    fun observeInquiries(hostId: String): Flow<List<Inquiry>> = callbackFlow {
+    /** Host-side stream: inquiries addressed to [hostId]. */
+    fun observeInquiriesForHost(hostId: String): Flow<List<Inquiry>> = callbackFlow {
         val reg = col
             .whereEqualTo("hostId", hostId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
@@ -33,6 +36,41 @@ class InquiryRepository(
         awaitClose { reg.remove() }
     }
 
+    /** Traveller-side stream: inquiries this user has sent. */
+    fun observeInquiriesForTraveller(travellerId: String): Flow<List<Inquiry>> = callbackFlow {
+        val reg = col
+            .whereEqualTo("travellerId", travellerId)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snap, err ->
+                if (err != null) {
+                    trySend(emptyList())
+                    return@addSnapshotListener
+                }
+                trySend(snap?.toObjects(Inquiry::class.java).orEmpty())
+            }
+        awaitClose { reg.remove() }
+    }
+
+    /** Traveller-side: send an "I'm interested" to the given host. */
+    suspend fun sendInquiry(
+        hostId: String,
+        travellerId: String,
+        guestName: String,
+        guestPhone: String,
+    ): String {
+        val ref = col.add(
+            Inquiry(
+                hostId = hostId,
+                travellerId = travellerId,
+                guestName = guestName.ifBlank { "A traveller" },
+                guestPhone = guestPhone,
+                status = "pending",
+                timestamp = Timestamp.now().toDate(),
+            ),
+        ).await()
+        return ref.id
+    }
+
     suspend fun markCalled(inquiryId: String) {
         col.document(inquiryId).update("status", "called").await()
     }
@@ -42,9 +80,9 @@ class InquiryRepository(
     }
 
     /**
-     * Seeds one sample inquiry. Until the traveller app exists this is the only
-     * way to populate the Inquiry Box on a test device — wired to a small button
-     * on the (otherwise empty) Inquiries screen.
+     * Host-side dev helper: seeds one fake inquiry "from a traveller" so the
+     * Inquiry Box has something in it. Leaves [Inquiry.travellerId] blank so
+     * the rules accept it without a real traveller uid.
      */
     suspend fun addSampleInquiry(hostId: String) {
         val samples = listOf(
@@ -56,6 +94,7 @@ class InquiryRepository(
         col.add(
             Inquiry(
                 hostId = hostId,
+                travellerId = "",
                 guestName = name,
                 guestPhone = phone,
                 status = "pending",

@@ -70,6 +70,8 @@ data class DailyMenu(
 data class Inquiry(
     @DocumentId val id: String = "",
     val hostId: String = "",
+    /** Firebase uid of the traveller who sent this inquiry — empty for the host-side seed/sample button. */
+    val travellerId: String = "",
     val guestName: String = "",
     val guestPhone: String = "",
     /** "pending" | "called" | "closed" */

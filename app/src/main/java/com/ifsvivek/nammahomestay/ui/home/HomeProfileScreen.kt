@@ -69,6 +69,7 @@ import com.ifsvivek.nammahomestay.ui.components.StatusPill
 fun HomeProfileScreen(
     onOpenTodaysMenu: () -> Unit,
     modifier: Modifier = Modifier,
+    trailingTopBarAction: (@Composable () -> Unit)? = null,
     viewModel: HomeViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -89,7 +90,14 @@ fun HomeProfileScreen(
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0), // outer (bottom-bar) Scaffold already inset us
-        topBar = { NammaTopBar("My Home") },
+        topBar = {
+            NammaTopBar(
+                title = "My Home",
+                trailing = if (trailingTopBarAction != null) {
+                    { trailingTopBarAction() }
+                } else null,
+            )
+        },
         snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             ExtendedFloatingActionButton(

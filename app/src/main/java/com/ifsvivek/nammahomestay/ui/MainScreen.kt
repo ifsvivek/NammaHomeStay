@@ -23,6 +23,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.ifsvivek.nammahomestay.ui.components.ModeSwitchButton
 import com.ifsvivek.nammahomestay.ui.guide.GuideScreen
 import com.ifsvivek.nammahomestay.ui.home.HomeProfileScreen
 import com.ifsvivek.nammahomestay.ui.inquiry.InquiryScreen
@@ -38,6 +39,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     onSignOut: () -> Unit,
+    onSwitchToTraveller: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -53,6 +55,12 @@ fun MainScreen(
             launchSingleTop = true
             restoreState = true
         }
+    }
+
+    // Reused on every host screen that has a top bar (everything except the
+    // chrome-less Today's Menu).
+    val modeSwitchAction: @Composable () -> Unit = {
+        ModeSwitchButton(label = "Traveller mode", onClick = onSwitchToTraveller)
     }
 
     Scaffold(
@@ -98,7 +106,10 @@ fun MainScreen(
             modifier = Modifier.padding(inner),
         ) {
             composable(TopDestination.HOME.route) {
-                HomeProfileScreen(onOpenTodaysMenu = { goTo(TopDestination.MENU.route) })
+                HomeProfileScreen(
+                    onOpenTodaysMenu = { goTo(TopDestination.MENU.route) },
+                    trailingTopBarAction = modeSwitchAction,
+                )
             }
             composable(TopDestination.MENU.route) {
                 DailyMenuScreen(
@@ -108,10 +119,10 @@ fun MainScreen(
                 )
             }
             composable(TopDestination.INQUIRIES.route) {
-                InquiryScreen()
+                InquiryScreen(trailingTopBarAction = modeSwitchAction)
             }
             composable(TopDestination.GUIDE.route) {
-                GuideScreen(onSignOut = onSignOut)
+                GuideScreen(onSignOut = onSignOut, trailingTopBarAction = modeSwitchAction)
             }
         }
     }

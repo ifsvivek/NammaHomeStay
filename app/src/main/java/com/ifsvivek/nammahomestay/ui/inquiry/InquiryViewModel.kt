@@ -34,7 +34,7 @@ class InquiryViewModel(
             _state.update { it.copy(loading = false, message = "Please sign in again.") }
         } else {
             viewModelScope.launch {
-                inquiryRepo.observeInquiries(id).collect { list ->
+                inquiryRepo.observeInquiriesForHost(id).collect { list ->
                     _state.update { it.copy(loading = false, inquiries = list) }
                 }
             }
