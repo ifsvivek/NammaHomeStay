@@ -1,21 +1,30 @@
+# ── Build & tooling ─────────────────────────────────────────────────────────
 *.iml
 .gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
 /build
+/app/build
 /captures
 .externalNativeBuild
 .cxx
+.DS_Store
+
+# Local SDK paths
+/local.properties
 local.properties
+
+# Android Studio / IntelliJ project files (per-user, not source)
+.idea/
+
+# Firebase config (committed for development; keep the line for new clones)
 /app/google-services.json
 
-# Release signing — never commit the keystore or its passwords
+# ── Release signing — never commit the keystore or its passwords ────────────
 /keystore.properties
 *.jks
 *.keystore
+
+# ── Local-only artefacts (reports, scratch screenshots, exported HTML) ──────
+*.docx
+*.pdf
+/image copy*.png
+/student_evaluation_criteria*.html

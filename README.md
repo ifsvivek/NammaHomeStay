@@ -12,6 +12,9 @@ Built for rural farmers and homemakers with low digital literacy — big buttons
 ![minSdk](https://img.shields.io/badge/minSdk-24-555)
 ![Backend](https://img.shields.io/badge/Firebase-Auth%20%2B%20Firestore-FFCA28?logo=firebase&logoColor=black)
 
+[![Download APK](https://img.shields.io/github/v/release/ifsvivek/NammaHomeStay?label=Download%20signed%20APK&logo=android&color=3DDC84)](https://github.com/ifsvivek/NammaHomeStay/releases/latest)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](#getting-started)
+
 <br/>
 
 <img src="image.png" alt="Namma HomeStay screenshots" width="820"/>
@@ -143,6 +146,16 @@ inquiries/{autoId}
 ```
 
 Security rules are in [`firestore.rules`](firestore.rules) — a host can only read/write their own `hosts` / `homestays` / `daily_menus`, and any signed-in user can create an `inquiry`.
+
+---
+
+## Try it
+
+The fastest way to see the app is to install the **signed release APK** from the latest GitHub release:
+
+➡ **[Download `NammaHomeStay-v1.0.0.apk` from Releases](https://github.com/ifsvivek/NammaHomeStay/releases/latest)** *(~17.8 MB, APK Signature Scheme v2)*
+
+Allow "install from unknown sources" on the device once, then open the APK. The app is wired to a live Firebase project (`nammahomestay-dfe84230`) — sign in with a phone number to start. If you want to point it at your own Firebase project instead, see *Getting started* below.
 
 ---
 
