@@ -2,6 +2,8 @@ package com.ifsvivek.nammahomestay.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,6 +53,9 @@ fun MainScreen(
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    val hostShellVM: HostShellViewModel = viewModel()
+    val pendingCount by hostShellVM.pendingInquiryCount.collectAsStateWithLifecycle()
+
     fun goTo(route: String) {
         navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -75,10 +82,28 @@ fun MainScreen(
                 ) {
                     TopDestination.entries.forEach { dest ->
                         val selected = currentRoute == dest.route
+                        val showBadge = dest == TopDestination.INQUIRIES && pendingCount > 0
                         NavigationBarItem(
                             selected = selected,
                             onClick = { goTo(dest.route) },
-                            icon = { Icon(dest.icon, contentDescription = dest.label) },
+                            icon = {
+                                if (showBadge) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge(
+                                                containerColor = MaterialTheme.colorScheme.tertiary,
+                                                contentColor = MaterialTheme.colorScheme.onTertiary,
+                                            ) {
+                                                Text(pendingCount.toString())
+                                            }
+                                        },
+                                    ) {
+                                        Icon(dest.icon, contentDescription = dest.label)
+                                    }
+                                } else {
+                                    Icon(dest.icon, contentDescription = dest.label)
+                                }
+                            },
                             label = {
                                 Text(
                                     dest.label,
