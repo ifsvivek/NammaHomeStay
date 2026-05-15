@@ -11,6 +11,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -79,6 +81,13 @@ fun OsmMap(
         MapView(context).apply {
             setTileSource(TileSourceFactory.MAPNIK) // standard OSM
             setMultiTouchControls(true)
+            // Force the View to clip its own canvas drawing to its bounds.
+            // Without this, osmdroid's gesture-time invalidations can let
+            // map tiles leak above/below the slot, painting over the search
+            // bar and toolbar that sit in the same Compose Column.
+            clipChildren = true
+            clipToPadding = true
+            clipToOutline = true
             // OSM TOS: keep the © overlay visible.
             overlays.add(CopyrightOverlay(context))
             controller.setZoom(zoom)
@@ -163,7 +172,15 @@ fun OsmMap(
         onDispose { }
     }
 
-    Box(modifier) {
+    // `graphicsLayer { clip = true }` and clipToBounds together force a
+    // RenderNode-level clip the embedded Android View has to honour — a
+    // Compose-level Modifier.clip alone isn't enough for an AndroidView whose
+    // hosted View draws on its own canvas (osmdroid does this during gestures).
+    Box(
+        modifier
+            .graphicsLayer { clip = true }
+            .clipToBounds(),
+    ) {
         AndroidView(factory = { mapView }, modifier = Modifier.matchParentSize())
     }
 }

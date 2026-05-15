@@ -114,14 +114,19 @@ fun BrowseScreen(
                 }
             }
 
+            // Everything below the search + toolbar row takes the remaining
+            // vertical space via weight(1f). Using fillMaxSize() inside a
+            // non-weighted Column slot collapses to wrap-content during the
+            // measure pass that osmdroid forces while panning — which is what
+            // let the map paint over the toolbar in the old build.
             when {
                 state.loading -> Box(
-                    Modifier.fillMaxSize(),
+                    Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) { CircularProgressIndicator() }
 
                 state.homestays.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
+                    Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
                     EmptyState(
@@ -132,7 +137,7 @@ fun BrowseScreen(
                 }
 
                 state.filtered.isEmpty() -> Box(
-                    Modifier.fillMaxSize(),
+                    Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center,
                 ) {
                     EmptyState(
@@ -148,7 +153,7 @@ fun BrowseScreen(
 
                     if (pinned.isEmpty()) {
                         Box(
-                            Modifier.fillMaxSize(),
+                            Modifier.weight(1f).fillMaxWidth(),
                             contentAlignment = Alignment.Center,
                         ) {
                             EmptyState(
@@ -162,56 +167,51 @@ fun BrowseScreen(
                             )
                         }
                     } else {
-                        Column(Modifier.fillMaxSize()) {
-                            if (unpinnedCount > 0) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        Icons.Filled.Place,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(14.dp),
-                                    )
-                                    Spacer(Modifier.size(4.dp))
-                                    Text(
-                                        "${pinned.size} of ${state.filtered.size} pinned · others are in List view",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                            Box(
+                        if (unpinnedCount > 0) {
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp)
-                                    .clip(RoundedCornerShape(16.dp)),
+                                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                OsmMap(
-                                    modifier = Modifier.fillMaxSize(),
-                                    center = GeoPoint(pinned.first().latitude!!, pinned.first().longitude!!),
-                                    zoom = 12.0,
-                                    markers = pinned.map {
-                                        MapMarker(
-                                            id = it.id,
-                                            lat = it.latitude!!,
-                                            lng = it.longitude!!,
-                                            title = it.name.ifBlank { "A homestay" },
-                                            snippet = it.location.ifBlank { null },
-                                        )
-                                    },
-                                    onMarkerClick = { onOpenHomestay(it.id) },
+                                Icon(
+                                    Icons.Filled.Place,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(14.dp),
+                                )
+                                Spacer(Modifier.size(4.dp))
+                                Text(
+                                    "${pinned.size} of ${state.filtered.size} pinned · others are in List view",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
+                        // The map fills the rest of the Column. We deliberately
+                        // do NOT add Compose-level rounded corners / padding here
+                        // any more — they invited the gesture-time overflow even
+                        // with clipToBounds. Flush rectangular map = robust.
+                        OsmMap(
+                            modifier = Modifier.weight(1f).fillMaxWidth(),
+                            center = GeoPoint(pinned.first().latitude!!, pinned.first().longitude!!),
+                            zoom = 12.0,
+                            markers = pinned.map {
+                                MapMarker(
+                                    id = it.id,
+                                    lat = it.latitude!!,
+                                    lng = it.longitude!!,
+                                    title = it.name.ifBlank { "A homestay" },
+                                    snippet = it.location.ifBlank { null },
+                                )
+                            },
+                            onMarkerClick = { onOpenHomestay(it.id) },
+                        )
                     }
                 }
 
                 else -> LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
