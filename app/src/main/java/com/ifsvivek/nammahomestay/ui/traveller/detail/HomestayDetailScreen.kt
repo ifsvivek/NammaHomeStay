@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -26,6 +28,8 @@ import androidx.compose.material.icons.filled.CurrencyRupee
 import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Wash
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -34,6 +38,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -44,7 +49,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +85,12 @@ fun HomestayDetailScreen(
         if (state.justSent) {
             snackbar.showSnackbar("Sent! The host will see your interest.")
             viewModel.consumeSent()
+        }
+    }
+    LaunchedEffect(state.justReviewed) {
+        if (state.justReviewed) {
+            snackbar.showSnackbar("Thanks — your review is published.")
+            viewModel.consumeReviewed()
         }
     }
     LaunchedEffect(state.error) {
@@ -121,8 +136,13 @@ fun HomestayDetailScreen(
                 else -> DetailContent(
                     home = state.homestay!!,
                     todaysMenu = state.todaysMenu,
+                    reviews = state.reviews,
+                    aggregate = state.aggregate,
+                    canWriteReview = !state.travellerAlreadyReviewed,
+                    submittingReview = state.submittingReview,
                     sending = state.sending,
                     onSendInquiry = viewModel::sendInquiry,
+                    onSubmitReview = viewModel::submitReview,
                 )
             }
 
@@ -138,8 +158,13 @@ fun HomestayDetailScreen(
 private fun DetailContent(
     home: Homestay,
     todaysMenu: DailyMenu?,
+    reviews: List<com.ifsvivek.nammahomestay.data.model.Review>,
+    aggregate: com.ifsvivek.nammahomestay.data.model.AggregateRating?,
+    canWriteReview: Boolean,
+    submittingReview: Boolean,
     sending: Boolean,
     onSendInquiry: () -> Unit,
+    onSubmitReview: (rating: Int, comment: String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -215,7 +240,22 @@ private fun DetailContent(
                             home.location,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
                         )
+                        if (aggregate != null) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Spacer(Modifier.size(2.dp))
+                            Text(
+                                "%.1f".format(aggregate.averageStars) + " (${aggregate.count})",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -263,6 +303,45 @@ private fun DetailContent(
             }
         }
 
+        // ── Reviews ────────────────────────────────────────────────────────
+        item {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                SectionCard(title = "Reviews", icon = Icons.Filled.Star) {
+                    if (canWriteReview) {
+                        WriteReviewForm(
+                            submitting = submittingReview,
+                            onSubmit = onSubmitReview,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
+                    if (reviews.isEmpty()) {
+                        Text(
+                            if (canWriteReview) {
+                                "Be the first to leave a review."
+                            } else {
+                                "Thanks for your review!"
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        reviews.take(5).forEachIndexed { idx, r ->
+                            if (idx > 0) Spacer(Modifier.height(12.dp))
+                            ReviewRow(r)
+                        }
+                        if (reviews.size > 5) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "+ ${reviews.size - 5} more",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         // ── Big green "I'm interested" ─────────────────────────────────────
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {
@@ -289,16 +368,108 @@ private fun DetailContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun PromisesRow(checklist: VerificationChecklist) {
-    Row(
+    // FlowRow so chips wrap to the next line on narrow screens instead of one
+    // chip getting squeezed into a single-letter-per-line column.
+    FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
     ) {
         PromiseChip(Icons.Filled.Bed, "Clean bedding", checklist.cleanBedding)
         PromiseChip(Icons.Filled.Wash, "Washroom", checklist.functionalWashroom)
         PromiseChip(Icons.Filled.LocalDrink, "Drinking water", checklist.drinkingWater)
+    }
+}
+
+@Composable
+private fun WriteReviewForm(
+    submitting: Boolean,
+    onSubmit: (rating: Int, comment: String) -> Unit,
+) {
+    var rating by rememberSaveable { mutableIntStateOf(0) }
+    var comment by rememberSaveable { mutableStateOf("") }
+    Text(
+        "How was your stay?",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        (1..5).forEach { star ->
+            IconButton(onClick = { rating = star }) {
+                Icon(
+                    if (star <= rating) Icons.Filled.Star else Icons.Filled.StarBorder,
+                    contentDescription = "$star star${if (star == 1) "" else "s"}",
+                    tint = if (star <= rating) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+        }
+    }
+    OutlinedTextField(
+        value = comment,
+        onValueChange = { comment = it.take(500) },
+        label = { Text("A line or two (optional)") },
+        placeholder = { Text("e.g. The food was great and the host was so kind.") },
+        minLines = 2,
+        maxLines = 5,
+        modifier = Modifier.fillMaxWidth(),
+    )
+    Spacer(Modifier.height(8.dp))
+    Box(contentAlignment = Alignment.Center) {
+        BigActionButton(
+            text = if (submitting) "Sending…" else "Post review",
+            icon = Icons.Filled.Star,
+            enabled = rating > 0 && !submitting,
+            onClick = { onSubmit(rating, comment) },
+        )
+        if (submitting) CircularProgressIndicator(strokeWidth = 3.dp)
+    }
+}
+
+@Composable
+private fun ReviewRow(review: com.ifsvivek.nammahomestay.data.model.Review) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                review.travellerName.ifBlank { "A traveller" },
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            (1..5).forEach { star ->
+                Icon(
+                    if (star <= review.rating) Icons.Filled.Star else Icons.Filled.StarBorder,
+                    contentDescription = null,
+                    tint = if (star <= review.rating) {
+                        MaterialTheme.colorScheme.tertiary
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+        if (review.comment.isNotBlank()) {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                review.comment,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 }
 

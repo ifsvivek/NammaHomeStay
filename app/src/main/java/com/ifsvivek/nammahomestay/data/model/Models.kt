@@ -78,3 +78,26 @@ data class Inquiry(
     val status: String = "pending",
     @ServerTimestamp val timestamp: Date? = null,
 )
+
+/**
+ * A 1–5 star review left by a traveller on a homestay. One traveller can leave
+ * multiple reviews over time; the client UI prevents accidental duplicates.
+ */
+data class Review(
+    @DocumentId val id: String = "",
+    /** == host's uid; matches the homestay/daily-menu doc ids. */
+    val homestayId: String = "",
+    val travellerId: String = "",
+    val travellerName: String = "",
+    /** 1 to 5 inclusive. */
+    val rating: Int = 0,
+    val comment: String = "",
+    @ServerTimestamp val timestamp: Date? = null,
+)
+
+/** Pre-computed aggregate for a homestay's reviews, for browse cards + detail header. */
+data class AggregateRating(
+    val homestayId: String,
+    val count: Int,
+    val averageStars: Float,
+)

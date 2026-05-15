@@ -97,7 +97,18 @@ Type the 10 digits, tap **Send code**, type the 6-digit code, tap **Verify & con
 ### 📞 Inquiry Box & direct connect
 - "Incoming Interests" lists travellers (name + relative time + status).
 - Tap a card → expand → big **green "Call Guest"** button opens the phone dialer with the number pre-filled (`ACTION_DIAL` — no `CALL_PHONE` permission needed) and marks the inquiry as called.
-- "Add a sample interest" button to seed test data until the traveller-facing app exists.
+- "Add a sample interest" button on the same screen is kept for offline / dev seeding.
+
+### 🎒 Traveller side (Uber-style mode switch)
+- After OTP, a one-time welcome picker asks for a name and "I'm hosting" or "I'm travelling" — the role is persisted on-device via DataStore and switchable any time from the top-right pill.
+- **Find** tab: every LIVE homestay as a big card — photo, name + village, **★ aggregate rating**, **today's menu preview** ("Today: Ragi mudde · ₹120"), and a "● LIVE" pill.
+- **Detail screen**: a HorizontalPager of photos, the three promise chips (FlowRow so they never overflow), today's menu, **a Reviews section** (stars + comments + a star/text submit form), and a big green **"I'm interested"** button.
+- **Sent** tab: every inquiry the traveller has sent, with live status (Waiting · Host called · Closed).
+
+### ⭐ Reviews & ratings
+- Travellers can leave a **1–5 star review** with a short comment from a homestay's detail screen; one tap per star, optional text.
+- Reviews show inline on the detail screen and an **aggregate (★ 4.5 · 12)** surfaces on every browse card and detail header.
+- Aggregates are computed client-side so they keep working on the free Spark plan (no Cloud Functions needed).
 
 ### 📖 Guide & Help
 - Plain-language help cards for every feature, a "Call support" button, and sign out.
@@ -292,25 +303,36 @@ daily_menus/{uid}                          # one doc per host; overwritten daily
 
 inquiries/{autoId}
   hostId: string
+  travellerId: string                       # uid of the traveller; empty for host-side sample button
   guestName: string
   guestPhone: string
   status: "pending" | "called" | "closed"
   timestamp: timestamp
+
+reviews/{autoId}
+  homestayId: string                        # == host's uid
+  travellerId: string
+  travellerName: string                     # snapshot at time of review
+  rating: int                               # 1..5
+  comment: string                           # up to 500 chars
+  timestamp: timestamp
 ```
 
-Security rules are in [`firestore.rules`](firestore.rules) — a host can only read/write their own `hosts` / `homestays` / `daily_menus`, and any signed-in user can create an `inquiry`.
+Security rules are in [`firestore.rules`](firestore.rules) — a host can only read/write their own `hosts` / `homestays` / `daily_menus`; a traveller can create an `inquiry` with their own `travellerId` and read what they sent; reviews are world-readable for any signed-in user, and only the review's author can create or edit it (rating constrained to 1..5).
 
 ---
 
 ## Future improvements
 
-- **Traveller-facing app** — there is no browse/enquire app yet; right now the "Interests" tab is seeded via a dev test button. The roadmap is a second Compose app that reads LIVE homestays and writes to `inquiries`.
 - **Cloud Storage for photos** — the current 6-photo cap and 350 KB-per-photo budget exist only because we're on the free Spark plan. On the Blaze plan we'd move blobs into Cloud Storage and remove both limits.
-- **R8 / minification** — release build currently has `isMinifyEnabled = false` because the Firestore POJO models (Host / Homestay / DailyMenu / Inquiry) need explicit `-keep` rules before R8 obfuscation is safe. Adding those rules is a small, contained change.
-- **More unit + UI tests** — only the LIVE-eligibility rules are unit-tested today. Compose UI tests for the four screens, and a Firestore-emulator integration test for the repositories, are obvious next steps.
-- **Real support phone number** — `SUPPORT_PHONE` in [`GuideScreen.kt`](app/src/main/java/com/ifsvivek/nammahomestay/ui/guide/GuideScreen.kt) is a placeholder (`+911800000000`) — swap before shipping.
+- **Push notifications (FCM)** — buzz the host when a new inquiry arrives and the traveller when the host marks "called"; today both sides just rely on live Firestore listeners while the app is open.
+- **Map view + nearby search** — Google Maps Compose with a pin per LIVE homestay, ordered by distance from the traveller.
+- **Availability calendar + accept/decline** — a host blocks dates; travellers see them; the host accepts or declines an inquiry instead of always picking up the phone.
 - **Localization (Kannada, Hindi, Tamil)** — strings are still English-only; the target audience would benefit from regional languages.
+- **R8 / minification** — release build currently has `isMinifyEnabled = false` because the Firestore POJO models (`Host` / `Homestay` / `DailyMenu` / `Inquiry` / `Review`) need explicit `-keep` rules before R8 obfuscation is safe. Adding those rules is a small, contained change.
+- **More unit + UI tests** — only the LIVE-eligibility rules are unit-tested today. Compose UI tests for the seven screens, and a Firestore-emulator integration test for the repositories, are obvious next steps.
 - **App Check / abuse hardening** — turn on Firebase App Check (Play Integrity provider) before opening sign-in to real numbers in production.
+- **Real support phone number** — `SUPPORT_PHONE` in [`GuideScreen.kt`](app/src/main/java/com/ifsvivek/nammahomestay/ui/guide/GuideScreen.kt) is a placeholder (`+911800000000`) — swap before shipping.
 
 ---
 

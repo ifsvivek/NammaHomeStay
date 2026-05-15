@@ -1,8 +1,8 @@
 package com.ifsvivek.nammahomestay.data.repository
 
+import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.ifsvivek.nammahomestay.data.FirestoreCollections
 import com.ifsvivek.nammahomestay.data.model.Inquiry
 import kotlinx.coroutines.channels.awaitClose
@@ -21,32 +21,33 @@ class InquiryRepository(
 ) {
     private val col = db.collection(FirestoreCollections.INQUIRIES)
 
-    /** Host-side stream: inquiries addressed to [hostId]. */
-    fun observeInquiriesForHost(hostId: String): Flow<List<Inquiry>> = callbackFlow {
-        val reg = col
-            .whereEqualTo("hostId", hostId)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
-            .addSnapshotListener { snap, err ->
-                if (err != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-                trySend(snap?.toObjects(Inquiry::class.java).orEmpty())
-            }
-        awaitClose { reg.remove() }
-    }
+    /** Host-side stream: inquiries addressed to [hostId]. Sorted newest-first client-side. */
+    fun observeInquiriesForHost(hostId: String): Flow<List<Inquiry>> =
+        observeBy(field = "hostId", value = hostId, tag = "ForHost")
 
-    /** Traveller-side stream: inquiries this user has sent. */
-    fun observeInquiriesForTraveller(travellerId: String): Flow<List<Inquiry>> = callbackFlow {
+    /** Traveller-side stream: inquiries this user has sent. Sorted newest-first client-side. */
+    fun observeInquiriesForTraveller(travellerId: String): Flow<List<Inquiry>> =
+        observeBy(field = "travellerId", value = travellerId, tag = "ForTraveller")
+
+    /**
+     * The two streams are structurally identical — a single `whereEqualTo` with
+     * an in-memory newest-first sort. We intentionally don't `orderBy` on the
+     * server because that would force Firestore to demand a composite index
+     * (hostId|travellerId asc + timestamp desc) before the listener works at
+     * all, and we'd rather get every inquiry and sort 1–100 in Kotlin.
+     */
+    private fun observeBy(field: String, value: String, tag: String): Flow<List<Inquiry>> = callbackFlow {
         val reg = col
-            .whereEqualTo("travellerId", travellerId)
-            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .whereEqualTo(field, value)
             .addSnapshotListener { snap, err ->
                 if (err != null) {
+                    Log.e(TAG, "snapshot[$tag, $field=$value] failed", err)
                     trySend(emptyList())
                     return@addSnapshotListener
                 }
-                trySend(snap?.toObjects(Inquiry::class.java).orEmpty())
+                val list = snap?.toObjects(Inquiry::class.java).orEmpty()
+                    .sortedByDescending { it.timestamp?.time ?: 0L }
+                trySend(list)
             }
         awaitClose { reg.remove() }
     }
@@ -101,5 +102,9 @@ class InquiryRepository(
                 timestamp = Timestamp.now().toDate(),
             ),
         ).await()
+    }
+
+    private companion object {
+        const val TAG = "InquiryRepository"
     }
 }

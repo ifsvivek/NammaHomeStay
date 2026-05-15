@@ -48,5 +48,19 @@ service cloud.firestore {
           || request.resource.data.travellerId == request.auth.uid
         );
     }
+
+    // Reviews: any signed-in user can read; only the author can create / edit
+    // their own; the rating must be a 1–5 integer.
+    match /reviews/{reviewId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.travellerId == request.auth.uid
+        && request.resource.data.homestayId is string
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if signedIn()
+        && resource.data.travellerId == request.auth.uid;
+    }
   }
 }

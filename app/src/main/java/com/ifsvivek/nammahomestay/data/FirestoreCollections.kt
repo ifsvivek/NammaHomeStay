@@ -6,4 +6,5 @@ object FirestoreCollections {
     const val HOMESTAYS = "homestays"
     const val DAILY_MENUS = "daily_menus"
     const val INQUIRIES = "inquiries"
+    const val REVIEWS = "reviews"
 }

@@ -1,5 +1,6 @@
 package com.ifsvivek.nammahomestay.ui.traveller.browse
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cottage
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -110,7 +113,12 @@ fun BrowseScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(state.filtered, key = { it.id }) { home ->
-                        HomestayCard(home = home, onClick = { onOpenHomestay(home.id) })
+                        HomestayCard(
+                            home = home,
+                            todaysMenu = state.menusByHostId[home.id],
+                            rating = state.ratingsByHostId[home.id],
+                            onClick = { onOpenHomestay(home.id) },
+                        )
                     }
                     item { Spacer(Modifier.height(16.dp)) }
                 }
@@ -121,7 +129,12 @@ fun BrowseScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomestayCard(home: Homestay, onClick: () -> Unit) {
+private fun HomestayCard(
+    home: Homestay,
+    todaysMenu: com.ifsvivek.nammahomestay.data.model.DailyMenu?,
+    rating: com.ifsvivek.nammahomestay.data.model.AggregateRating?,
+    onClick: () -> Unit,
+) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -164,6 +177,46 @@ private fun HomestayCard(home: Homestay, onClick: () -> Unit) {
                             home.location,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (rating != null) {
+                            Icon(
+                                Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.size(2.dp))
+                            Text(
+                                "%.1f".format(rating.averageStars) + " (${rating.count})",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+                if (todaysMenu != null && !todaysMenu.isEmpty) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.tertiaryContainer)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Restaurant,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(Modifier.size(8.dp))
+                        Text(
+                            "Today: ${todaysMenu.dishName.ifBlank { "see menu" }} · ₹${todaysMenu.price}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
